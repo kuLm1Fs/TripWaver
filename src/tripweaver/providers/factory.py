@@ -2,12 +2,14 @@ from multiprocessing import Value
 from tripweaver.core.config import Settings
 from tripweaver.providers.base import LLMProvider, SearchProvider
 from tripweaver.providers.llm import MockLLMProvider
-from tripweaver.providers.search import MockSearchProvider
+from tripweaver.providers.search import MockSearchProvider, BraveSearchProvider
 
 
 def build_search_provider(settings: Settings) -> SearchProvider:
     if settings.search_provider == "mock":
         return MockSearchProvider()
+    if settings.search_provider == "brave":
+        return BraveSearchProvider(settings)
 
     raise ValueError(f"Unsupported search provider:{settings.search_provider}")
 
