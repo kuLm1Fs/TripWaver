@@ -12,6 +12,8 @@ class Settings(BaseSettings):
     brave_api_key: str | None = None
     openai_api_key: str | None = None
     openai_model: str = "gpt-4.1-mini"
+    openai_base_url: str | None = None
+    brave_base_url: str | None = None
 
     model_config = SettingsConfigDict(
         env_file=".env",
