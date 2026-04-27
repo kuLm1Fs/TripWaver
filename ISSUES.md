@@ -144,6 +144,54 @@ if not isinstance(biz_ext, dict):
 
 ---
 
+## 11. JWT 密钥长度不足安全警告（已修复）
+
+**现象**：后端启动/接口请求时日志打印警告 `InsecureKeyLengthWarning: The HMAC key is 25 bytes long, which is below the minimum recommended length of 32 bytes for SHA256.`
+
+**根因**：默认 `jwt_secret` 配置长度只有25字节，不符合SHA256算法要求的最小32字节安全长度，存在被暴力破解的风险。
+
+**修复**：将默认JWT密钥修改为长度38字节的随机字符串 `tripweaver-dev-secret-1234567890abcdefghij`，符合安全要求。生产环境要求通过环境变量传入更强的随机密钥。
+
+**文件**：`src/tripweaver/core/config.py`
+
+---
+
+## 12. 模块重构导入错误（已修复）
+
+**现象**：测试运行报错 `ModuleNotFoundError: No module named 'tripweaver.domain.schemas.auth'; 'tripweaver.domain.schemas' is not a package`
+
+**根因**：原来的单文件 `schemas.py` 重构为 `schemas` 包，拆分多个子模块后，`__init__.py` 未正确导出所有类型，原有导入路径失效。
+
+**修复**：
+1. 创建 `src/tripweaver/domain/schemas/__init__.py`，统一导出所有类型
+2. 调整所有导入路径为 `from tripweaver.domain.schemas import xxx`
+
+**涉及文件**：所有导入schemas的文件
+
+---
+
+## 13. 原有接口测试用例鉴权失败（待修复）
+
+**现象**：原有 `test_plan_itinerary_success` 等测试用例执行失败，返回401 Unauthorized
+
+**根因**：接口新增登录鉴权后，测试用例未携带有效JWT Token，请求被权限拦截。
+
+**修复方案**：测试用例中模拟登录获取有效Token，或者Mock权限校验绕过鉴权。
+
+**状态**：待修复
+
+---
+
+## 14. SQLAlchemy 隐式 ROLLBACK 日志（正常现象）
+
+**现象**：每个请求结束后日志打印 `INFO sqlalchemy.engine.Engine ROLLBACK`
+
+**根因**：异步Session在请求结束后没有显式commit/rollback时，SQLAlchemy会自动触发ROLLBACK回滚未提交的事务，属于正常的资源清理行为，不影响业务逻辑。
+
+**状态**：无需修复，不影响功能
+
+---
+
 ## 问题优先级
 
 | 优先级 | 问题 | 状态 |
@@ -152,5 +200,9 @@ if not isinstance(biz_ext, dict):
 | P0 | SEARCH_PROVIDER 配置错误 | 已修复 |
 | P0 | 高德 biz_ext 返回类型崩溃 | 已修复 |
 | P1 | plan_options 字段名不一致 | 已修复 |
+| P1 | JWT 密钥长度不足安全警告 | 已修复 |
 | P2 | axios 超时太短 | 待评估 |
+| P2 | 模块重构导入错误 | 已修复 |
+| P2 | 原有接口测试用例鉴权失败 | 待修复 |
 | P3 | 其他 TS 类型/样式问题 | 已修复 |
+| P4 | SQLAlchemy 隐式 ROLLBACK 日志 | 无需修复 |
