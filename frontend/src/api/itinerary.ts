@@ -3,7 +3,7 @@ import type { ItineraryRequest, ItineraryResponse } from '@/types/itinerary'
 
 const apiClient = axios.create({
   baseURL: '/api/v1',
-  timeout: 60000,
+  timeout: 120000, // 真实模式生成行程较慢，超时设为2分钟
   headers: {
     'Content-Type': 'application/json',
   },

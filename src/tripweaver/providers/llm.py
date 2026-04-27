@@ -2,6 +2,7 @@ import asyncio
 import json
 from typing import override
 
+import structlog
 from volcenginesdkarkruntime import Ark
 
 from tripweaver.core.config import Settings
@@ -13,6 +14,8 @@ from tripweaver.domain.schemas import (
 )
 from tripweaver.providers.base import LLMProvider
 from tripweaver.providers.llm_prompt import build_itinerary_prompt
+
+logger = structlog.get_logger(__name__)
 
 
 class MockLLMProvider(LLMProvider):
@@ -79,32 +82,59 @@ class ARKLLMProvider(LLMProvider):
 
         prompt = build_itinerary_prompt(request, candidates, guide_text)
 
-        # chat.completions.create 是同步调用，放到线程池避免阻塞事件循环
-        def _call_llm():
-            return self.client.chat.completions.create(
-                model=self.settings.ark_model,
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.7,
-                timeout=120, # 2分钟超时
-            )
-
         try:
-            response = await asyncio.to_thread(_call_llm)
-            text = response.choices[0].message.content.strip()
-            print(f"LLM生成完成，文本长度：{len(text)}")
+            # 增加重试机制，最多重试2次
+            for retry in range(3):
+                try:
+                    response = await asyncio.to_thread(
+                        self.client.chat.completions.create,
+                        model=self.settings.ark_model,
+                        messages=[{"role": "user", "content": prompt}],
+                        temperature=0.7,
+                        timeout=300, # 5分钟超时，足够长
+                        max_tokens=4096, # 增加输出长度限制，避免截断
+                    )
+                    text = response.choices[0].message.content.strip()
+                    logger.info("LLM生成完成", text_length=len(text), retry_times=retry)
+                    break
+                except Exception as e:
+                    if retry < 2:
+                        logger.warning("LLM调用失败，正在重试", error=str(e), retry_times=retry+1)
+                        await asyncio.sleep(2)
+                    else:
+                        raise e
+            
         except Exception as e:
-            print(f"LLM调用失败：{str(e)}")
+            logger.error("LLM调用最终失败", error=str(e))
             raise RuntimeError(f"行程生成失败：{str(e)}") from e
-        # 适配返回数组或者单个对象的情况
+
+        # 解析 JSON
         data = json.loads(text)
+
+        # 适配返回数组或者单个对象的情况，同时统一字段名和前端匹配
         if isinstance(data, list):
             # 多方案返回，取第一个作为默认方案
-            plan_options = data
-            main_plan = data[0] if data else {}
+            plan_options = []
+            for plan in data:
+                # 字段名适配：plan_name->title, plan_desc->description
+                adapted_plan = {
+                    "title": plan.get("plan_name") or plan.get("title", "未命名方案"),
+                    "description": plan.get("plan_desc") or plan.get("description", ""),
+                    "items": plan.get("items", []),
+                    "overview": plan.get("overview", "")
+                }
+                plan_options.append(adapted_plan)
+            main_plan = plan_options[0] if plan_options else {}
         else:
             # 兼容单个方案返回
-            plan_options = [data]
-            main_plan = data
+            adapted_plan = {
+                "title": data.get("plan_name") or data.get("title", "未命名方案"),
+                "description": data.get("plan_desc") or data.get("description", ""),
+                "items": data.get("items", []),
+                "overview": data.get("overview", "")
+            }
+            plan_options = [adapted_plan]
+            main_plan = adapted_plan
         
         # 解析主方案
         items = []

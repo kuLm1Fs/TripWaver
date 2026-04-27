@@ -24,10 +24,19 @@ async def plan_itinerary(
     db: AsyncSession = Depends(get_db)
 ) -> ItineraryResponse:
     settings = get_settings()
+    search_provider = build_search_provider(settings)
+
+    # 如果是高德搜索，同时用于坐标回填
+    amap_provider = None
+    from tripweaver.providers.amap import AmapSearchProvider
+    if isinstance(search_provider, AmapSearchProvider):
+        amap_provider = search_provider
+
     planner = PlannerService(
-        search_provider=build_search_provider(settings),
+        search_provider=search_provider,
         llm_provider=build_llm_provider(settings),
         supplement_provider=build_supplement_provider(settings),
+        amap_provider=amap_provider,
     )
     # 生成行程
     response = await planner.plan(request)

@@ -143,7 +143,31 @@ class AmapSearchProvider(SearchProvider):
 
         return segments
 
-    # ── 地理编码 ──────────────────────────────────────────────
+    # ── 公开地理编码 ──────────────────────────────────────────
+
+    async def geocode_address(
+        self, address: str
+    ) -> tuple[float | None, float | None]:
+        """根据地址查询经纬度，用于 LLM 生成地点的坐标回填。"""
+        async with httpx.AsyncClient(timeout=10) as client:
+            resp = await client.get(
+                f"{AMAP_BASE}/geocode/geo",
+                params={"key": self.key, "address": address, "output": "JSON"},
+            )
+            resp.raise_for_status()
+            data = resp.json()
+
+            if data.get("status") != "1" or not data.get("geocodes"):
+                return None, None
+
+            location = data["geocodes"][0].get("location", "")
+            parts = location.split(",")
+            if len(parts) != 2:
+                return None, None
+
+            return float(parts[0]), float(parts[1])
+
+    # ── 内部地理编码 ──────────────────────────────────────────
 
     async def _geocode(
         self, client: httpx.AsyncClient, request: ItineraryRequest
