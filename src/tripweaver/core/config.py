@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     api_prefix: str = "/api/v1"
     search_provider: str = "mock"
     llm_provider: str = "mock"
+    cors_origins: list[str] = ["*"]
     tavily_api_key: str | None = None
     ark_api_key: str | None = None
     ark_model: str | None = None
