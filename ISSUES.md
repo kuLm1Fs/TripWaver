@@ -192,6 +192,56 @@ if not isinstance(biz_ext, dict):
 
 ---
 
+## 15. LLM 生成地点无坐标，地图不显示标记（已修复）
+
+**现象**：行程生成成功后，地图上没有任何 POI 标记。前端 `TripDetailPage` 中 `mapPois` 计算属性过滤掉了 `longitude`/`latitude` 为 null 的地点。
+
+**根因**：LLM 收到 40 个候选 POI（带坐标），但生成行程时自行编造地名，没有复用候选 POI 的坐标。返回的所有地点 `longitude`/`latitude` 都是 null。
+
+**修复**：在 `PlannerService` 中新增坐标回填逻辑 `_backfill_coordinates()`：
+1. 名称匹配：精确匹配 + 模糊匹配（名称互相包含），从候选 POI 复制坐标
+2. 地理编码兜底：调用高德 `/v3/geocode/geo` API 根据地址查询坐标
+3. `amap.py` 新增公开方法 `geocode_address(address)` 用于地址转经纬度
+
+**文件**：
+- `src/tripweaver/providers/amap.py` — 新增 `geocode_address` 方法
+- `src/tripweaver/services/planner.py` — 新增 `_backfill_coordinates`、`_match_candidate`、`_set_place_coord`、`_geocode_places`
+- `src/tripweaver/api/routes/itineraries.py` — 传入 amap provider
+
+---
+
+## 16. 坐标回填 plan_options dict 未生效（已修复）
+
+**现象**：修复 #15 后，`response.items`（主方案）有坐标，但 `plan_options[0]`（同一个方案的 dict 结构）中坐标仍为 null。方案 2、3 的 plan_options 有坐标，唯独方案 1 没有。
+
+**根因**：坐标回填用 `seen_names` 集合去重，同一地名只处理一次。主方案的地名先被收集（CandidatePlace 对象），plan_options 中同名 dict 被去重跳过。回填修改了 CandidatePlace 对象，但 plan_options 中的 dict 副本未被修改。
+
+**修复**：去掉 `seen_names` 去重，处理所有 place 实例。同时引入 `coord_cache` 缓存已匹配的坐标，避免重复调用地理编码 API。
+
+**文件**：`src/tripweaver/services/planner.py`
+
+---
+
+## 17. LLM 串行生成 3 个方案耗时过长（已优化）
+
+**现象**：一次 LLM 调用生成 3 个方案需要 ~200 秒，用户体验差。
+
+**根因**：单个 prompt 要求 LLM 一次性输出 3 个完整方案的 JSON，token 量大，生成时间长。
+
+**修复**：改为 3 个专用 prompt 并行调用（`asyncio.gather`）：
+- `PLAN_STYLES` 定义 3 种方案风格（休闲逛吃/景点打卡/小众特色）
+- `build_single_plan_prompt()` 为每个风格生成专用 prompt
+- `ARKLLMProvider` 并行调用 3 次 LLM，每次只生成 1 个方案
+- 单个方案失败不影响其他方案
+
+**效果**：~200 秒 → ~106 秒，提速约 47%
+
+**文件**：
+- `src/tripweaver/providers/llm_prompt.py` — 新增 `PLAN_STYLES`、`build_single_plan_prompt`
+- `src/tripweaver/providers/llm.py` — 改为并行调用
+
+---
+
 ## 问题优先级
 
 | 优先级 | 问题 | 状态 |
@@ -199,8 +249,11 @@ if not isinstance(biz_ext, dict):
 | P0 | ARK LLM 调用阻塞事件循环 | 已修复 |
 | P0 | SEARCH_PROVIDER 配置错误 | 已修复 |
 | P0 | 高德 biz_ext 返回类型崩溃 | 已修复 |
+| P0 | LLM 生成地点无坐标 | 已修复 |
 | P1 | plan_options 字段名不一致 | 已修复 |
 | P1 | JWT 密钥长度不足安全警告 | 已修复 |
+| P1 | 坐标回填 plan_options dict 未生效 | 已修复 |
+| P1 | LLM 串行生成耗时过长 | 已优化 |
 | P2 | axios 超时太短 | 待评估 |
 | P2 | 模块重构导入错误 | 已修复 |
 | P2 | 原有接口测试用例鉴权失败 | 待修复 |
