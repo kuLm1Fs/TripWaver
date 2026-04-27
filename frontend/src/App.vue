@@ -33,7 +33,7 @@ const handleReset = () => {
     <h1 class="app-title">🌍 TripWeaver 智能行程规划</h1>
     
     <div v-if="!itinerary">
-      <TripForm @submit="handleFormSubmit" />
+      <TripForm @submit="handleFormSubmit" :loading="loading" />
     </div>
     
     <div v-else>

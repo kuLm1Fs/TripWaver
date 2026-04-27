@@ -47,10 +47,10 @@
           type="primary"
           size="large"
           @click="handleSubmit"
-          :loading="loading"
+          :loading="props.loading"
           style="width: 100%"
         >
-          {{ loading ? '生成中...' : '生成行程' }}
+          {{ props.loading ? '生成中...' : '生成行程' }}
         </el-button>
       </el-form-item>
     </el-form>
@@ -65,6 +65,10 @@ const emit = defineEmits<{
   submit: [request: ItineraryRequest]
 }>()
 
+const props = defineProps<{
+  loading?: boolean
+}>()
+
 const form = ref<ItineraryRequest>({
   destination: '',
   days: 1,
@@ -72,15 +76,10 @@ const form = ref<ItineraryRequest>({
 })
 
 const selectedInterests = ref<string[]>([])
-const loading = ref(false)
 
 const handleSubmit = () => {
-  loading.value = true
   form.value.interests = selectedInterests.value
   emit('submit', form.value)
-  setTimeout(() => {
-    loading.value = false
-  }, 500)
 }
 </script>
 
