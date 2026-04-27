@@ -4,6 +4,7 @@ from tripweaver.domain.schemas import CandidatePlace, ItineraryRequest
 def build_itinerary_prompt(
     request: ItineraryRequest,
     candidates: list[CandidatePlace],
+    guide_text: str = "",
 ) -> str:
     candidate_lines = []
 
@@ -12,7 +13,15 @@ def build_itinerary_prompt(
 
     candidate_text = "\n".join(candidate_lines) or "未找到候选地点。"
 
-    interest = ", ".join(request.interests) if request.interests else "常规观光"
+    all_interests = list(request.interests) + list(request.custom_tags)
+    interest = ", ".join(all_interests) if all_interests else "常规观光"
+
+    guide_section = ""
+    if guide_text:
+        guide_section = f"""
+
+参考攻略信息：
+{guide_text}"""
 
     return f"""
 你是一个专业的旅行行程规划助手，擅长为朋友聚会定制多样化的旅行方案。
@@ -25,8 +34,9 @@ def build_itinerary_prompt(
 用户兴趣偏好：
 {interest}
 
-候选推荐地点：
+候选推荐地点（来自高德地图真实POI数据）：
 {candidate_text}
+{guide_section}
 
 生成规则：
 - 优先使用给出的候选地点作为主要信息来源，若候选地点不足可补充当地真实存在的热门地点

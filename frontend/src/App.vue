@@ -1,44 +1,33 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { ElMessage } from 'element-plus'
-import TripForm from './components/TripForm.vue'
-import TripResult from './components/TripResult.vue'
-import { planItinerary } from './api/itinerary'
-import type { ItineraryRequest, ItineraryResponse } from './types/itinerary'
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 
-const itinerary = ref<ItineraryResponse | null>(null)
-const loading = ref(false)
+const router = useRouter()
+const authStore = useAuthStore()
 
-const handleFormSubmit = async (request: ItineraryRequest) => {
-  loading.value = true
-  try {
-    const result = await planItinerary(request)
-    itinerary.value = result
-    ElMessage.success('行程生成成功！')
-  } catch (err) {
-    console.error(err)
-    ElMessage.error('行程生成失败，请稍后重试')
-  } finally {
-    loading.value = false
-  }
-}
-
-const handleReset = () => {
-  itinerary.value = null
+const handleLogout = () => {
+  authStore.logout()
+  router.push('/login')
 }
 </script>
 
 <template>
   <div class="app-container">
-    <h1 class="app-title">🌍 TripWeaver 智能行程规划</h1>
-    
-    <div v-if="!itinerary">
-      <TripForm @submit="handleFormSubmit" :loading="loading" />
-    </div>
-    
-    <div v-else>
-      <TripResult :itinerary="itinerary" @reset="handleReset" />
-    </div>
+    <!-- 顶部导航栏 -->
+    <header class="app-header" v-if="authStore.isLoggedIn">
+      <div class="header-content">
+        <h1 class="app-logo" @click="router.push('/')">🌍 TripWeaver</h1>
+        <div class="header-right">
+          <span class="user-name">{{ authStore.nickname || '用户' }}</span>
+          <el-button text @click="handleLogout">退出</el-button>
+        </div>
+      </div>
+    </header>
+
+    <!-- 页面内容 -->
+    <main class="app-main">
+      <router-view />
+    </main>
   </div>
 </template>
 
@@ -46,14 +35,45 @@ const handleReset = () => {
 .app-container {
   min-height: 100vh;
   background-color: #f5f7fa;
-  padding: 40px 20px;
 }
 
-.app-title {
-  text-align: center;
+.app-header {
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.header-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 12px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.app-logo {
+  margin: 0;
+  font-size: 22px;
   color: #303133;
-  margin-bottom: 30px;
-  font-size: 32px;
+  cursor: pointer;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.user-name {
+  color: #606266;
+  font-size: 14px;
+}
+
+.app-main {
+  padding: 20px;
 }
 </style>
 

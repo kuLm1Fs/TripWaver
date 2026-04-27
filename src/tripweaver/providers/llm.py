@@ -17,7 +17,8 @@ from tripweaver.providers.llm_prompt import build_itinerary_prompt
 class MockLLMProvider(LLMProvider):
     @override
     async def generate_itinerary(
-        self, request: ItineraryRequest, candidates: list[CandidatePlace]
+        self, request: ItineraryRequest, candidates: list[CandidatePlace],
+        guide_text: str = "",
     ) -> ItineraryResponse:
         items = []
 
@@ -69,12 +70,13 @@ class ARKLLMProvider(LLMProvider):
 
     @override
     async def generate_itinerary(
-        self, request: ItineraryRequest, candidates: list[CandidatePlace]
+        self, request: ItineraryRequest, candidates: list[CandidatePlace],
+        guide_text: str = "",
     ) -> ItineraryResponse:
         if not self.settings.ark_api_key:
             raise ValueError("OPENAI_API_KEY is reequired when LLM_PROVIDER = ark")
 
-        prompt = build_itinerary_prompt(request, candidates)
+        prompt = build_itinerary_prompt(request, candidates, guide_text)
 
         response = self.client.responses.create(
             model=self.settings.ark_model,
