@@ -1,11 +1,10 @@
-import httpx
+from typing import override
 
+from tavily import AsyncTavilyClient
 from typing import override
 from tripweaver.domain.schemas import CandidatePlace, ItineraryRequest
 from tripweaver.providers.base import SearchProvider
 from tripweaver.core.config import Settings
-from tripweaver.domain.schemas import CandidatePlace, ItineraryRequest
-from tripweaver.providers.base import SearchProvider
 
 
 class MockSearchProvider(SearchProvider):
@@ -32,45 +31,35 @@ class MockSearchProvider(SearchProvider):
         ]
 
 
-class BraveSearchProvider(SearchProvider):
+class TavilySearchProvider(SearchProvider):
     def __init__(self, settings: Settings) -> None:
         self.settings = settings
+        self.client = AsyncTavilyClient(api_key=settings.tavily_api_key)
 
     @override
     async def search_places(self, request: ItineraryRequest) -> list[CandidatePlace]:
-        if not self.settings.brave_api_key:
-            raise ValueError("BRAVE_API_KEY is required when SEARCH_PROVIDER=brave")
+        if not self.settings.tavily_api_key:
+            raise ValueError("TAVILY_API_KEY is required when SEARCH_PROVIDER=tavily")
 
-        query_parts = [request.destination, "travel attractions"]
+        query_parts = [request.destination, "top travel attractions places to visit"]
         query_parts.extend(request.interests)
         query = " ".join(query_parts)
 
-        headers = {
-            "Accept": "application/json",
-            "X-Subscription-Token": self.settings.brave_api_key,
-        }
+        response = await self.client.search(
+            query=query,
+            search_depth="basic",
+            max_results=5,
+            include_answer=False,
+            include_raw_content=False,
+        )
 
-        params = {
-            "q": query,
-            "count": 5,
-        }
-
-        async with httpx.AsyncClient(timeout=10) as client:
-            response = await client.get(
-                self.settings.brave_base_url,
-                headers=headers,
-                params=params,
-            )
-            response.raise_for_status()
-
-        data = response.json()
-        results = data.get("web", {}).get("results", [])
+        results = response.get("results", [])
 
         places: list[CandidatePlace] = []
 
         for item in results:
             title = item.get("title")
-            description = item.get("description")
+            content = item.get("content")
 
             if not title:
                 continue
@@ -78,8 +67,8 @@ class BraveSearchProvider(SearchProvider):
             places.append(
                 CandidatePlace(
                     name=title,
-                    category="search_result",
-                    reason=description or "Found via Brave Search",
+                    category="attraction",
+                    reason=content or "Found via Tavily Search",
                 )
             )
         return places

@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 
-from tripweaver.domain.schemas import ItineraryRequest, ItineraryResponse
 from tripweaver.core.config import get_settings
+from tripweaver.domain.schemas import ItineraryRequest, ItineraryResponse
 from tripweaver.providers.factory import build_llm_provider, build_search_provider
 from tripweaver.services.planner import PlannerService
 

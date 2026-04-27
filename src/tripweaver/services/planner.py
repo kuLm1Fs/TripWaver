@@ -8,9 +8,7 @@ from tripweaver.providers.base import LLMProvider, SearchProvider
 
 
 class PlannerService:
-    def __init__(
-        self, search_provider: SearchProvider, llm_provider: LLMProvider
-    ) -> None:
+    def __init__(self, search_provider: SearchProvider, llm_provider: LLMProvider) -> None:
         self.search_provider = search_provider
         self.llm_provider = llm_provider
 

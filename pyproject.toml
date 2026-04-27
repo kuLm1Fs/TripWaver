@@ -7,10 +7,11 @@ requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.115.0",
     "httpx>=0.28.0",
-    "openai>=1.108.0",
+    "volcengine-python-sdk[ark]",
     "pydantic-settings>=2.10.0",
     "structlog>=25.4.0",
     "uvicorn[standard]>=0.35.0",
+    "tavily>=1.1.0",
 ]
 
 [dependency-groups]
