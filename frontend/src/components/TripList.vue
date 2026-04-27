@@ -14,9 +14,8 @@
         :key="trip.id"
         class="trip-card"
         shadow="hover"
-        @click="goToDetail(trip.id)"
       >
-        <div class="trip-card-content">
+        <div class="trip-card-content" @click="goToDetail(trip.id)">
           <div class="trip-info">
             <h3>{{ trip.destination }}</h3>
             <p>{{ trip.days }}天行程 · {{ trip.interests?.join('、') || '无偏好' }}</p>
@@ -27,6 +26,15 @@
             <span class="trip-date">{{ formatDate(trip.created_at) }}</span>
           </div>
         </div>
+        <el-button
+          class="delete-btn"
+          type="danger"
+          :icon="Delete"
+          size="small"
+          circle
+          plain
+          @click.stop="handleDelete(trip)"
+        />
       </el-card>
     </div>
   </div>
@@ -35,7 +43,9 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { apiClient } from '@/api/itinerary'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { Delete } from '@element-plus/icons-vue'
+import { apiClient, deleteItinerary } from '@/api/itinerary'
 import type { ItinerarySummary } from '@/types/itinerary'
 
 const router = useRouter()
@@ -59,6 +69,21 @@ const goToDetail = (id: number) => {
   router.push(`/trip/${id}`)
 }
 
+const handleDelete = async (trip: ItinerarySummary) => {
+  try {
+    await ElMessageBox.confirm(
+      `确定删除「${trip.destination}」行程？删除后不可恢复。`,
+      '删除行程',
+      { confirmButtonText: '删除', cancelButtonText: '取消', type: 'warning' },
+    )
+    await deleteItinerary(trip.id)
+    trips.value = trips.value.filter((t) => t.id !== trip.id)
+    ElMessage.success('行程已删除')
+  } catch {
+    // 用户取消或删除失败
+  }
+}
+
 const formatDate = (dateStr: string) => {
   return new Date(dateStr).toLocaleDateString('zh-CN')
 }
@@ -78,12 +103,25 @@ onMounted(fetchTrips)
 }
 
 .trip-card {
+  position: relative;
   cursor: pointer;
   transition: transform 0.2s;
 }
 
 .trip-card:hover {
   transform: translateY(-2px);
+}
+
+.delete-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.trip-card:hover .delete-btn {
+  opacity: 1;
 }
 
 .trip-card-content {

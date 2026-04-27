@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from tripweaver.core.config import get_settings
@@ -160,6 +160,39 @@ async def get_itinerary(
         "created_at": itinerary.created_at.isoformat() if itinerary.created_at else None,
         "updated_at": itinerary.updated_at.isoformat() if itinerary.updated_at else None,
     }
+
+
+@router.delete("/{itinerary_id}", summary="删除行程")
+async def delete_itinerary(
+    itinerary_id: int,
+    user_id: int = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db),
+):
+    """删除行程，仅创建者可操作，同时清理关联数据"""
+    itinerary = await db.get(Itinerary, itinerary_id)
+    if not itinerary:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="行程不存在",
+        )
+    if itinerary.creator_id != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="只有创建者可以删除行程",
+        )
+
+    # 删除关联数据
+    from tripweaver.models.itinerary import ItineraryMember
+    from tripweaver.models.share import ShareLink
+    from tripweaver.models.vote import Vote
+
+    await db.execute(delete(Vote).where(Vote.itinerary_id == itinerary_id))
+    await db.execute(delete(ShareLink).where(ShareLink.itinerary_id == itinerary_id))
+    await db.execute(delete(ItineraryMember).where(ItineraryMember.itinerary_id == itinerary_id))
+    await db.delete(itinerary)
+    await db.commit()
+
+    return {"success": True, "message": "行程已删除"}
 
 
 @router.get("/{itinerary_id}/route", summary="获取行程路线规划")

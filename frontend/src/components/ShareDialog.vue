@@ -16,8 +16,11 @@
     </div>
 
     <div v-else class="share-result">
-      <p class="share-label">分享链接：</p>
-      <el-input v-model="shareUrl" readonly>
+      <p class="share-hint">扫描二维码或复制链接邀请好友加入投票</p>
+      <div class="qr-wrap">
+        <img v-if="qrDataUrl" :src="qrDataUrl" class="qr-image" alt="分享二维码" />
+      </div>
+      <el-input v-model="shareUrl" readonly size="small">
         <template #append>
           <el-button @click="handleCopy">复制</el-button>
         </template>
@@ -33,6 +36,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
+import QRCode from 'qrcode'
 import { createShareLink } from '@/api/share'
 
 const props = defineProps<{
@@ -49,6 +53,7 @@ const loading = ref(false)
 const expireDays = ref(7)
 const shareUrl = ref('')
 const expireAt = ref<string | null>(null)
+const qrDataUrl = ref('')
 
 watch(
   () => props.modelValue,
@@ -57,6 +62,7 @@ watch(
     if (!val) {
       shareUrl.value = ''
       expireAt.value = null
+      qrDataUrl.value = ''
     }
   },
 )
@@ -74,6 +80,11 @@ const handleCreate = async () => {
     })
     shareUrl.value = `${window.location.origin}${res.share_url}`
     expireAt.value = res.expire_at
+    qrDataUrl.value = await QRCode.toDataURL(shareUrl.value, {
+      width: 200,
+      margin: 2,
+      color: { dark: '#303133', light: '#ffffff' },
+    })
   } catch {
     ElMessage.error('生成分享链接失败')
   } finally {
@@ -93,6 +104,7 @@ const handleCopy = async () => {
 const handleClose = () => {
   shareUrl.value = ''
   expireAt.value = null
+  qrDataUrl.value = ''
 }
 </script>
 
@@ -101,9 +113,25 @@ const handleClose = () => {
   text-align: center;
 }
 
-.share-label {
-  margin-bottom: 10px;
-  color: #606266;
+.share-hint {
+  color: #909399;
+  font-size: 13px;
+  margin: 0 0 16px;
+}
+
+.qr-wrap {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.qr-image {
+  width: 180px;
+  height: 180px;
+  border-radius: 8px;
+  border: 1px solid #ebeef5;
+  padding: 8px;
+  background: #fff;
 }
 
 .share-expire {

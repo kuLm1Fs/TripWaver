@@ -36,3 +36,7 @@ export const planItinerary = async (data: ItineraryRequest): Promise<ItineraryRe
   const response = await apiClient.post<ItineraryResponse>('/itineraries/plan', data)
   return response.data
 }
+
+export const deleteItinerary = async (id: number): Promise<void> => {
+  await apiClient.delete(`/itineraries/${id}`)
+}
