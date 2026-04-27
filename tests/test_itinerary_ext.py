@@ -224,7 +224,7 @@ class TestVote:
             headers={"Authorization": "Bearer faketoken"},
         )
         assert resp.status_code == 400
-        assert "锁定" in resp.json()["detail"]
+        assert "锁定" in resp.json()["error"]
 
     def test_vote_duplicate(self, mock_session, auth_user):
         """重复投票"""
@@ -246,7 +246,7 @@ class TestVote:
             headers={"Authorization": "Bearer faketoken"},
         )
         assert resp.status_code == 400
-        assert "已经投过票" in resp.json()["detail"]
+        assert "已经投过票" in resp.json()["error"]
 
 
 # ── 锁定/解锁测试 ──
