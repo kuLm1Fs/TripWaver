@@ -56,12 +56,12 @@ async def test_mock_llm_provider():
 
     # 验证三方案输出
     assert len(response.plan_options) == 3
-    plan_names = [p["plan_name"] for p in response.plan_options]
+    plan_names = [p["title"] for p in response.plan_options]
     assert "休闲逛吃" in plan_names
     assert "景点打卡" in plan_names
     assert "小众特色" in plan_names
     for plan in response.plan_options:
-        assert "plan_desc" in plan
+        assert "description" in plan
         assert "destination" in plan
         assert "overview" in plan
         assert "items" in plan

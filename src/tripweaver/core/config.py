@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     # Redis配置
     redis_url: str = "redis://localhost:6379/0"
     # JWT配置
-    jwt_secret: str = "tripweaver-dev-secret-xxx"
+    jwt_secret: str = "tripweaver-dev-secret-1234567890abcdefghij"
     jwt_expire_hours: int = 2
     
     # 高德地图配置

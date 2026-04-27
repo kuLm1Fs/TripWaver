@@ -42,7 +42,7 @@
               <el-icon><Van /></el-icon> 公交
             </el-radio-button>
           </el-radio-group>
-          <div class="range-slider">
+          <div class="range-slider-wrap">
             <el-slider
               v-model="form.range_minutes"
               :min="5"
@@ -51,7 +51,10 @@
               show-stops
               :marks="rangeMarks"
             />
-            <span class="range-label">{{ form.range_minutes }} 分钟</span>
+            <div class="range-hint">
+              <span class="range-label">{{ form.range_minutes }} 分钟</span>
+              <span class="range-distance">约 {{ estimatedDistance }}</span>
+            </div>
           </div>
         </div>
       </el-form-item>
@@ -96,7 +99,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Position, Van } from '@element-plus/icons-vue'
 import MapView from '@/components/MapView.vue'
@@ -131,6 +134,12 @@ const rangeMarks: Record<number, string> = {
   45: '45',
   60: '60',
 }
+
+const estimatedDistance = computed(() => {
+  const speed = form.value.range_mode === 'walking' ? 0.08 : 0.25 // km/min
+  const km = speed * form.value.range_minutes
+  return km < 1 ? `${Math.round(km * 1000)}米` : `${km.toFixed(1)}公里`
+})
 
 const handlePlaceSelected = (place: { name: string; address?: string; location?: { lng: number; lat: number } }) => {
   form.value.destination = place.name
@@ -183,17 +192,31 @@ const handleSubmit = () => {
   width: 100%;
 }
 
-.range-slider {
-  margin-top: 12px;
-  padding: 0 8px;
+.range-slider-wrap {
+  margin-top: 20px;
+  padding: 20px 20px 16px;
+  background: #f5f7fa;
+  border-radius: 8px;
+}
+
+.range-hint {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  margin-top: 20px;
+  padding-bottom: 4px;
 }
 
 .range-label {
-  display: inline-block;
-  margin-top: 4px;
-  font-size: 14px;
+  font-size: 16px;
   color: #409eff;
-  font-weight: 500;
+  font-weight: 600;
+}
+
+.range-distance {
+  font-size: 13px;
+  color: #909399;
 }
 
 .tag-hint {

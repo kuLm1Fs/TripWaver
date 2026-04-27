@@ -33,7 +33,7 @@ def test_build_prompt_with_candidates():
     assert "景点打卡" in prompt
     assert "小众特色" in prompt
     assert "只能返回合法JSON" in prompt
-    assert '"plan_name"' in prompt
+    assert '"title"' in prompt
     assert '"destination": "Xiamen"' in prompt
 
 

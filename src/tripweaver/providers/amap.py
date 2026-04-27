@@ -221,8 +221,10 @@ class AmapSearchProvider(SearchProvider):
                 poi_type = poi.get("type", "")
                 category = self._type_to_category(poi_type)
 
-                # 评分/人均
+                # 评分/人均（高德返回的 biz_ext 可能是 dict 或 list）
                 biz_ext = poi.get("biz_ext", {})
+                if not isinstance(biz_ext, dict):
+                    biz_ext = {}
                 cost = biz_ext.get("cost", "")
                 rating = biz_ext.get("rating", "")
                 price = f"人均{cost}元" if cost else None

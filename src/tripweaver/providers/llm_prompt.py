@@ -46,12 +46,12 @@ def build_itinerary_prompt(
 - 只能返回合法JSON，不要添加任何其他内容
 - 不要在JSON前后添加解释、标题、注释或Markdown代码块
 - 顶层结构为数组，包含3个方案对象
-- 每个方案对象必须包含：plan_name、plan_desc、destination、overview、items
+- 每个方案对象必须包含：title、description、destination、overview、items
 - items中的每一项必须包含：day、title、summary、places
 - places中的每一项必须包含：name、category、reason、address、longitude、latitude、price、business_hours、tags
 - 字段说明：
-  - plan_name: 方案名称，对应上面3种风格
-  - plan_desc: 方案简短介绍，说明适合人群和特色
+  - title: 方案名称，对应上面3种风格
+  - description: 方案简短介绍，说明适合人群和特色
   - address: 地点完整地址
   - longitude/latitude: 经纬度，数字类型，没有的话填null
   - price: 人均消费金额/范围，字符串
@@ -63,8 +63,8 @@ def build_itinerary_prompt(
 请严格按照以下JSON结构返回：
 [
     {{
-        "plan_name": "休闲逛吃",
-        "plan_desc": "适合喜欢美食探店、轻松休闲的朋友，节奏缓慢，以吃喝为主",
+        "title": "休闲逛吃",
+        "description": "适合喜欢美食探店、轻松休闲的朋友，节奏缓慢，以吃喝为主",
         "destination": "{request.destination}",
         "overview": "...",
         "items": [

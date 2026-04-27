@@ -1,3 +1,4 @@
+import asyncio
 import json
 from typing import override
 
@@ -34,22 +35,22 @@ class MockLLMProvider(LLMProvider):
         # 生成模拟的3个方案
         plan_options = [
             {
-                "plan_name": "休闲逛吃",
-                "plan_desc": "适合喜欢美食探店、轻松休闲的朋友",
+                "title": "休闲逛吃",
+                "description": "适合喜欢美食探店、轻松休闲的朋友",
                 "destination": request.destination,
                 "overview": f"休闲吃逛{request.days}天行程",
                 "items": [item.model_dump() for item in items]
             },
             {
-                "plan_name": "景点打卡",
-                "plan_desc": "涵盖当地经典必去景点，适合第一次来玩的游客",
+                "title": "景点打卡",
+                "description": "涵盖当地经典必去景点，适合第一次来玩的游客",
                 "destination": request.destination,
                 "overview": f"经典景点{request.days}天打卡行程",
                 "items": [item.model_dump() for item in items]
             },
             {
-                "plan_name": "小众特色",
-                "plan_desc": "挖掘本地人常去的小众好去处，避开人流",
+                "title": "小众特色",
+                "description": "挖掘本地人常去的小众好去处，避开人流",
                 "destination": request.destination,
                 "overview": f"小众特色{request.days}天深度行程",
                 "items": [item.model_dump() for item in items]
@@ -74,25 +75,26 @@ class ARKLLMProvider(LLMProvider):
         guide_text: str = "",
     ) -> ItineraryResponse:
         if not self.settings.ark_api_key:
-            raise ValueError("OPENAI_API_KEY is reequired when LLM_PROVIDER = ark")
+            raise ValueError("ARK_API_KEY is required when LLM_PROVIDER = ark")
 
         prompt = build_itinerary_prompt(request, candidates, guide_text)
 
-        response = self.client.responses.create(
-            model=self.settings.ark_model,
-            input=prompt,
-        )
+        # chat.completions.create 是同步调用，放到线程池避免阻塞事件循环
+        def _call_llm():
+            return self.client.chat.completions.create(
+                model=self.settings.ark_model,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.7,
+                timeout=120, # 2分钟超时
+            )
 
-        text_parts = []
-
-        for item in response.output:
-            if getattr(item, "type", None) != "message":
-                continue
-
-            for content in item.content:
-                if getattr(content, "type", None) == "output_text":
-                    text_parts.append(content.text)
-        text = "\n".join(text_parts).strip()
+        try:
+            response = await asyncio.to_thread(_call_llm)
+            text = response.choices[0].message.content.strip()
+            print(f"LLM生成完成，文本长度：{len(text)}")
+        except Exception as e:
+            print(f"LLM调用失败：{str(e)}")
+            raise RuntimeError(f"行程生成失败：{str(e)}") from e
         # 适配返回数组或者单个对象的情况
         data = json.loads(text)
         if isinstance(data, list):
