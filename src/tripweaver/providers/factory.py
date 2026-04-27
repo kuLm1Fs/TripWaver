@@ -1,7 +1,7 @@
 from tripweaver.core.config import Settings
 from tripweaver.providers.base import LLMProvider, SearchProvider
 from tripweaver.providers.llm import ARKLLMProvider, MockLLMProvider
-from tripweaver.providers.search import TavilySearchProvider, MockSearchProvider
+from tripweaver.providers.search import MockSearchProvider, TavilySearchProvider
 
 
 def build_search_provider(settings: Settings) -> SearchProvider:

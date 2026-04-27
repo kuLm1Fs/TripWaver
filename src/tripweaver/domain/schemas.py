@@ -11,6 +11,12 @@ class CandidatePlace(BaseModel):
     name: str
     category: str
     reason: str
+    address: str | None = None
+    longitude: float | None = None
+    latitude: float | None = None
+    price: str | None = None
+    business_hours: str | None = None
+    tags: list[str] = Field(default_factory=list)
 
 
 class ItineraryItem(BaseModel):
@@ -21,6 +27,8 @@ class ItineraryItem(BaseModel):
 
 
 class ItineraryResponse(BaseModel):
+    itinerary_id: int | None = None
     destination: str
     overview: str
     items: list[ItineraryItem]
+    plan_options: list[dict] = Field(default_factory=list, description="多路线方案选项")

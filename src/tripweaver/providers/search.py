@@ -1,10 +1,10 @@
 from typing import override
 
 from tavily import AsyncTavilyClient
-from typing import override
+
+from tripweaver.core.config import Settings
 from tripweaver.domain.schemas import CandidatePlace, ItineraryRequest
 from tripweaver.providers.base import SearchProvider
-from tripweaver.core.config import Settings
 
 
 class MockSearchProvider(SearchProvider):
@@ -45,21 +45,32 @@ class TavilySearchProvider(SearchProvider):
         query_parts.extend(request.interests)
         query = " ".join(query_parts)
 
-        response = await self.client.search(
-            query=query,
-            search_depth="basic",
-            max_results=5,
-            include_answer=False,
-            include_raw_content=False,
-        )
+        try:
+            response = await self.client.search(
+                query=query,
+                search_depth="basic",
+                max_results=5,
+                include_answer=False,
+                include_raw_content=False,
+            )
+        except Exception as e:
+            raise RuntimeError(f"Tavily search failed: {str(e)}") from e
 
-        results = response.get("results", [])
+        # 兼容SDK返回对象或者字典两种情况
+        if hasattr(response, "results"):
+            results = response.results
+        else:
+            results = response.get("results", [])
 
         places: list[CandidatePlace] = []
 
         for item in results:
-            title = item.get("title")
-            content = item.get("content")
+            if hasattr(item, "title"):
+                title = item.title
+                content = item.content
+            else:
+                title = item.get("title")
+                content = item.get("content")
 
             if not title:
                 continue
