@@ -54,6 +54,18 @@ async def test_mock_llm_provider():
     assert "Day 2 in Guangzhou" in response.items[1].title
     assert len(response.items[1].places) == 3
 
+    # 验证三方案输出
+    assert len(response.plan_options) == 3
+    plan_names = [p["plan_name"] for p in response.plan_options]
+    assert "休闲逛吃" in plan_names
+    assert "景点打卡" in plan_names
+    assert "小众特色" in plan_names
+    for plan in response.plan_options:
+        assert "plan_desc" in plan
+        assert "destination" in plan
+        assert "overview" in plan
+        assert "items" in plan
+
 
 def test_provider_factory():
     mock_settings = Settings(

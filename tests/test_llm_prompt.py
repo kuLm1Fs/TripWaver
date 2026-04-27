@@ -29,8 +29,11 @@ def test_build_prompt_with_candidates():
     assert "beach, seafood" in prompt
     assert "Gulangyu Island" in prompt
     assert "Zeng Cuo An" in prompt
-    assert "优先使用候选地点" in prompt
-    assert "只能返回合法 JSON" in prompt
+    assert "休闲逛吃" in prompt
+    assert "景点打卡" in prompt
+    assert "小众特色" in prompt
+    assert "只能返回合法JSON" in prompt
+    assert '"plan_name"' in prompt
     assert '"destination": "Xiamen"' in prompt
 
 
@@ -47,3 +50,17 @@ def test_build_prompt_without_candidates():
     assert "2 天" in prompt
     assert "常规观光" in prompt
     assert "未找到候选地点。" in prompt
+    assert "休闲逛吃" in prompt
+
+
+def test_build_prompt_places_fields():
+    """验证prompt包含新增的地点字段"""
+    request = ItineraryRequest(destination="Chengdu", days=1)
+    prompt = build_itinerary_prompt(request, [])
+
+    assert "address" in prompt
+    assert "longitude" in prompt
+    assert "latitude" in prompt
+    assert "price" in prompt
+    assert "business_hours" in prompt
+    assert "tags" in prompt
