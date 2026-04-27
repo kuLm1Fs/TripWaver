@@ -92,6 +92,68 @@
       :itinerary-id="trip.itinerary_id"
     />
 
+    <!-- 锁定行程弹窗 -->
+    <el-dialog
+      v-model="showLockDialog"
+      title=""
+      width="480px"
+      :close-on-click-modal="false"
+      class="lock-dialog"
+    >
+      <div class="lock-dialog-body">
+        <div class="lock-icon-wrap">
+          <el-icon :size="48" color="#E6A23C"><WarningFilled /></el-icon>
+        </div>
+        <h3 class="lock-title">确认锁定行程？</h3>
+        <p class="lock-desc">锁定后将结束投票，最终方案确定后不可更改。</p>
+
+        <!-- 投票统计 -->
+        <div class="lock-vote-summary">
+          <div class="lock-vote-header">当前投票情况</div>
+          <div
+            v-for="(option, index) in planOptions"
+            :key="index"
+            class="lock-plan-row"
+            :class="{ 'is-leading': getLockWinnerIndex() === index && getTotalLockVotes() > 0 }"
+          >
+            <div class="lock-plan-info">
+              <span class="lock-plan-name">{{ option.title || `方案${index + 1}` }}</span>
+              <el-tag
+                v-if="getLockWinnerIndex() === index && getTotalLockVotes() > 0"
+                type="success"
+                size="small"
+                effect="dark"
+              >
+                领先
+              </el-tag>
+            </div>
+            <div class="lock-plan-votes">
+              <el-progress
+                :percentage="getLockVotePercentage(index)"
+                :stroke-width="10"
+                :color="getLockWinnerIndex() === index ? '#67c23a' : '#dcdfe6'"
+                :show-text="false"
+                style="flex: 1"
+              />
+              <span class="lock-vote-num">{{ getLockVoteCount(index) }}票</span>
+            </div>
+          </div>
+          <div v-if="getTotalLockVotes() === 0" class="lock-no-votes">
+            暂无人投票，锁定后将以第一个方案为准
+          </div>
+        </div>
+      </div>
+
+      <template #footer>
+        <div class="lock-dialog-footer">
+          <el-button @click="showLockDialog = false">再想想</el-button>
+          <el-button type="warning" @click="confirmLock" :loading="lockLoading">
+            确认锁定
+          </el-button>
+        </div>
+      </template>
+    </el-dialog>
+
     <el-button @click="goBack" style="display: block; margin: 30px auto;">
       返回首页
     </el-button>
@@ -105,7 +167,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
+import { WarningFilled } from '@element-plus/icons-vue'
 import { useTripStore } from '@/stores/trip'
 import { apiClient } from '@/api/itinerary'
 import { lockItinerary } from '@/api/lock'
@@ -144,6 +207,8 @@ const currentUserVote = ref<number | null>(null)
 const isCreator = ref(false)
 const tripLocked = ref(false)
 const showShareDialog = ref(false)
+const showLockDialog = ref(false)
+const lockLoading = ref(false)
 const selectedPlanIndex = ref(0)
 const routeSegments = ref<RouteSegment[]>([])
 const routeInfo = ref<RouteInfo | null>(null)
@@ -240,15 +305,52 @@ const fetchRoute = async (planIndex: number = 0) => {
   }
 }
 
-const handleLock = async () => {
+const handleLock = () => {
   if (!trip.value?.itinerary_id) return
+  showLockDialog.value = true
+}
+
+// 锁定弹窗内的投票统计
+const getLockVoteCount = (index: number): number => {
+  const stat = voteStats.value.find((s) => s.plan_index === index)
+  return stat?.count || 0
+}
+
+const getTotalLockVotes = (): number => {
+  return voteStats.value.reduce((sum, s) => sum + s.count, 0)
+}
+
+const getLockVotePercentage = (index: number): number => {
+  const total = getTotalLockVotes()
+  if (total === 0) return 0
+  return Math.round((getLockVoteCount(index) / total) * 100)
+}
+
+const getLockWinnerIndex = (): number => {
+  let maxVotes = 0
+  let winner = 0
+  voteStats.value.forEach((s) => {
+    if (s.count > maxVotes) {
+      maxVotes = s.count
+      winner = s.plan_index
+    }
+  })
+  return winner
+}
+
+const confirmLock = async () => {
+  if (!trip.value?.itinerary_id) return
+  lockLoading.value = true
   try {
-    await ElMessageBox.confirm('锁定后投票将结束，确认锁定？', '确认锁定')
-    const res = await lockItinerary(trip.value.itinerary_id, 'lock')
+    const winnerIndex = getTotalLockVotes() > 0 ? getLockWinnerIndex() : 0
+    const res = await lockItinerary(trip.value.itinerary_id, 'lock', winnerIndex)
     tripLocked.value = res.is_locked
+    showLockDialog.value = false
     ElMessage.success('行程已锁定')
   } catch {
-    // 用户取消
+    ElMessage.error('锁定失败')
+  } finally {
+    lockLoading.value = false
   }
 }
 
@@ -361,5 +463,100 @@ onMounted(async () => {
   max-width: 900px;
   margin: 40px auto;
   padding: 20px;
+}
+
+/* 锁定弹窗样式 */
+.lock-dialog-body {
+  text-align: center;
+  padding: 0 8px;
+}
+
+.lock-icon-wrap {
+  margin-bottom: 16px;
+}
+
+.lock-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #303133;
+  margin: 0 0 8px;
+}
+
+.lock-desc {
+  color: #909399;
+  font-size: 14px;
+  margin: 0 0 24px;
+}
+
+.lock-vote-summary {
+  background: #fafafa;
+  border-radius: 8px;
+  padding: 16px;
+  text-align: left;
+}
+
+.lock-vote-header {
+  font-size: 13px;
+  font-weight: 600;
+  color: #606266;
+  margin-bottom: 12px;
+}
+
+.lock-plan-row {
+  padding: 10px 12px;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  background: #fff;
+  border: 1px solid #ebeef5;
+  transition: all 0.2s;
+}
+
+.lock-plan-row:last-child {
+  margin-bottom: 0;
+}
+
+.lock-plan-row.is-leading {
+  border-color: #67c23a;
+  background: #f0f9eb;
+}
+
+.lock-plan-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.lock-plan-name {
+  font-weight: 600;
+  font-size: 14px;
+  color: #303133;
+}
+
+.lock-plan-votes {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.lock-vote-num {
+  font-size: 13px;
+  font-weight: 600;
+  color: #606266;
+  min-width: 36px;
+  text-align: right;
+}
+
+.lock-no-votes {
+  color: #c0c4cc;
+  font-size: 13px;
+  text-align: center;
+  padding: 8px 0;
+}
+
+.lock-dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
 }
 </style>
