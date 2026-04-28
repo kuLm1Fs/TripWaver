@@ -19,10 +19,20 @@ router = APIRouter(prefix="/itineraries", tags=["行程规划"])
 
 @router.post("/plan", response_model=ItineraryResponse, summary="生成行程规划")
 async def plan_itinerary(
-    request: ItineraryRequest,
+    request_data: ItineraryRequest,
     user_id: int = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db)
 ) -> ItineraryResponse:
+    from tripweaver.core.ratelimit import WINDOW_SECONDS, is_rate_limited
+
+    rate_key = f"ratelimit:plan:{user_id}"
+    limited, count = await is_rate_limited(rate_key)
+    if limited:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=f"请求过于频繁，请{WINDOW_SECONDS // 60}分钟后再试（{count}次）",
+        )
+
     settings = get_settings()
     search_provider = build_search_provider(settings)
 
@@ -39,14 +49,14 @@ async def plan_itinerary(
         amap_provider=amap_provider,
     )
     # 生成行程
-    response = await planner.plan(request)
+    response = await planner.plan(request_data)
     
     # 存储到数据库
     itinerary = Itinerary(
         creator_id=user_id,
-        destination=request.destination,
-        days=request.days,
-        interests=request.interests,
+        destination=request_data.destination,
+        days=request_data.days,
+        interests=request_data.interests,
         plan_results=response.model_dump()
     )
     db.add(itinerary)

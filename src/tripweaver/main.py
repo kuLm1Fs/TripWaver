@@ -31,6 +31,24 @@ app.include_router(itinerary_ext_router, prefix="/api/v1")
 app.include_router(cache_admin_router, prefix="/api/v1")
 
 
-@app.get("/health", summary="健康检查")
+@app.get("/health/live", summary="存活检查")
+async def health_live():
+    """Liveness probe — 应用进程存活即可。"""
+    from tripweaver.core.health import health_live as check
+    return await check()
+
+
+@app.get("/health/ready", summary="就绪检查")
+async def health_ready():
+    """Readiness probe — 检查 Redis 和 DB 连通性。"""
+    from tripweaver.core.health import health_ready as check
+    error_resp, body = await check()
+    if error_resp:
+        return error_resp
+    return body
+
+
+@app.get("/health", include_in_schema=False)
 async def health_check():
+    """兼容旧路径。"""
     return {"status": "ok"}
