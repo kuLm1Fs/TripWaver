@@ -1,9 +1,11 @@
 """行程规划服务 — 串联搜索、攻略、LLM 生成"""
 
 import asyncio
+from time import perf_counter
 
 import structlog
 
+from tripweaver.core.logging import bind_metric
 from tripweaver.domain.schemas import ItineraryRequest, ItineraryResponse
 from tripweaver.providers.base import LLMProvider, SearchProvider, SupplementSearchProvider
 from tripweaver.services.cache import get_cached, incr_stats, set_cached
@@ -30,25 +32,37 @@ class PlannerService:
         cache_key = make_cache_key(request)
         cached = await get_cached(cache_key)
         if cached:
-            logger.info("LLM缓存命中", key=cache_key)
+            logger.info("llm_cache_hit", key=cache_key)
             await incr_stats(hits=True)
+            bind_metric(cache_hit=True, llm_cached=True)
             return cached
 
         await incr_stats(hits=False)
+        bind_metric(cache_hit=False, llm_cached=False)
 
+        t0 = perf_counter()
         logger.info("开始搜索POI", destination=request.destination, range_mode=request.range_mode)
         candidates = await self.search_provider.search_places(request)
-        logger.info("POI搜索完成", count=len(candidates))
+        search_ms = (perf_counter() - t0) * 1000
+        logger.info("poi_searched", destination=request.destination, candidates=len(candidates), duration_ms=round(search_ms, 2))
 
+        t1 = perf_counter()
         logger.info("开始LLM生成行程")
         itinerary = await self.llm_provider.generate_itinerary(request, candidates)
-        logger.info("行程生成完成", plans=len(itinerary.plan_options), days=len(itinerary.items))
+        llm_ms = (perf_counter() - t1) * 1000
+        logger.info(
+            "llm_generated",
+            plans=len(itinerary.plan_options),
+            days=len(itinerary.items),
+            duration_ms=round(llm_ms, 2),
+        )
 
         # 回填坐标
         await self._backfill_coordinates(itinerary, candidates)
 
         # 写入缓存
         await set_cached(cache_key, itinerary)
+        bind_metric(llm_duration_ms=round(llm_ms, 2), search_duration_ms=round(search_ms, 2))
 
         return itinerary
 

@@ -39,6 +39,11 @@ def get_request_id() -> str | None:
     return request_id_var.get()
 
 
+def bind_metric(**kwargs) -> None:
+    """绑定业务指标到当前上下文，后续日志自动携带。"""
+    structlog.contextvars.bind_contextvars(**kwargs)
+
+
 class LoggingMiddleware(BaseHTTPMiddleware):
     """请求日志中间件：注入 request_id，记录请求/响应信息和耗时"""
 

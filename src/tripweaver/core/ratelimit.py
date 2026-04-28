@@ -1,12 +1,15 @@
-"""滑动窗口限流 — 基于 Redis"""
+"""滑动窗口限流 — 基于 Redis，Redis 不可用时 fail-open"""
 
 import time
 from functools import wraps
 from typing import Callable
 
+import structlog
 from fastapi import HTTPException, Request, status
 
 from tripweaver.core.redis import get_redis
+
+logger = structlog.get_logger(__name__)
 
 # 每 10 分钟窗口内最多 5 次
 WINDOW_SECONDS = 600
@@ -20,33 +23,30 @@ def make_rate_key(request: Request, user_id: int | None) -> str:
 
 
 async def is_rate_limited(key: str) -> tuple[bool, int]:
-    """判断是否触发限流。
+    """判断是否触发限流。Redis 不可用时 fail-open（允许通过）。
 
     Returns:
         (is_limited, current_count)
     """
-    redis = await get_redis()
-    now = time.time()
-    window_start = now - WINDOW_SECONDS
+    try:
+        redis = await get_redis()
+        now = time.time()
+        window_start = now - WINDOW_SECONDS
 
-    pipe = redis.pipeline()
-    # 删除窗口外的旧记录
-    pipe.zremrangebyscore(key, 0, window_start)
-    # 计数当前窗口内请求
-    pipe.zcard(key)
-    # 加入当前请求
-    pipe.zadd(key, {str(now): now})
-    # 设置过期
-    pipe.expire(key, WINDOW_SECONDS + 10)
-    results = await pipe.execute()
+        pipe = redis.pipeline()
+        pipe.zremrangebyscore(key, 0, window_start)
+        pipe.zcard(key)
+        pipe.zadd(key, {str(now): now})
+        pipe.expire(key, WINDOW_SECONDS + 10)
+        results = await pipe.execute()
 
-    count = results[1]  # zcard 结果
-    return count >= MAX_REQUESTS, count
-
-
-async def increment_rate(key: str) -> None:
-    """确认限流通过后正式计数（zadd 已在 is_rate_limited 中写入）。"""
-    pass  # 已在 is_rate_limited 中通过 pipeline 写入，无需额外操作
+        count = results[1]
+        if count >= MAX_REQUESTS:
+            logger.warning("rate_limit_triggered", key=key)
+        return count >= MAX_REQUESTS, count
+    except Exception as e:
+        logger.warning("限流检查失败，fail-open", key=key, error=str(e))
+        return False, 0
 
 
 def rate_limit(key_func: Callable[[Request, int | None], str]):
