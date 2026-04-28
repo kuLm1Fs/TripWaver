@@ -6,6 +6,7 @@ import structlog
 
 from tripweaver.domain.schemas import ItineraryRequest, ItineraryResponse
 from tripweaver.providers.base import LLMProvider, SearchProvider, SupplementSearchProvider
+from tripweaver.services.cache import get_cached, incr_stats, set_cached
 
 logger = structlog.get_logger(__name__)
 
@@ -24,6 +25,17 @@ class PlannerService:
         self.amap_provider = amap_provider
 
     async def plan(self, request: ItineraryRequest) -> ItineraryResponse:
+        from tripweaver.services.cache import make_cache_key
+
+        cache_key = make_cache_key(request)
+        cached = await get_cached(cache_key)
+        if cached:
+            logger.info("LLM缓存命中", key=cache_key)
+            await incr_stats(hits=True)
+            return cached
+
+        await incr_stats(hits=False)
+
         logger.info("开始搜索POI", destination=request.destination, range_mode=request.range_mode)
         candidates = await self.search_provider.search_places(request)
         logger.info("POI搜索完成", count=len(candidates))
@@ -34,6 +46,9 @@ class PlannerService:
 
         # 回填坐标
         await self._backfill_coordinates(itinerary, candidates)
+
+        # 写入缓存
+        await set_cached(cache_key, itinerary)
 
         return itinerary
 
