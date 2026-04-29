@@ -133,12 +133,86 @@ def build_itinerary_prompt(
 """.strip()
 
 
-def build_single_plan_prompt(
+def build_single_day_prompt(
     request: ItineraryRequest,
     candidates: list[CandidatePlace],
     style: dict,
+    day: int,
     guide_text: str = "",
 ) -> str:
+    """构建单个方案单日行程的 prompt。
+
+    Args:
+        request: 行程请求（包含 destination、days 等）
+        candidates: 候选地点
+        style: PLAN_STYLES 中的一个风格定义
+        day: 要生成的第几天（从1开始）
+        guide_text: 攻略文本
+    """
+    candidate_text = _build_candidate_text(candidates)
+    all_interests = list(request.interests) + list(request.custom_tags)
+    interest = ", ".join(all_interests) if all_interests else "常规观光"
+    guide_section = _build_guide_section(guide_text)
+
+    return f"""
+你是一个专业的旅行行程规划助手，擅长为朋友聚会定制旅行方案。
+
+请为 {request.destination} 生成第 {day} 天的「{style["title"]}」风格行程。
+
+风格要求：{style["instruction"]}
+
+用户兴趣偏好：
+{interest}
+
+候选推荐地点（来自高德地图真实POI数据）：
+{candidate_text}
+{guide_section}
+
+生成规则：
+- 优先使用给出的候选地点，若不足可补充当地真实存在的热门地点
+- 行程安排宽松合理，适合多人聚会，不要太赶
+- 只返回一个 JSON 对象的 items 数组（单日），不要添加任何其他内容
+- 不要在JSON前后添加解释、标题、注释或Markdown代码块
+- items 中每一项必须包含：day、title、summary、places
+- places 中每一项必须包含：name、category、reason、address、longitude、latitude、price、business_hours、tags
+- day 固定为 {day}
+- address: 地点完整地址
+- longitude/latitude: 经纬度，数字类型，没有的话填null
+- price: 人均消费金额/范围，字符串
+- business_hours: 营业时间，字符串
+- tags: 标签数组
+- 如果某个字段没有合适内容，返回空字符串/[]/null，不要省略字段
+
+请严格按照以下JSON结构返回（单个日 items 数组）：
+[
+    {{
+        "day": {day},
+        "title": "当天行程标题",
+        "summary": "当天行程简述",
+        "places": [
+            {{
+                "name": "地点名称",
+                "category": "分类",
+                "reason": "推荐理由",
+                "address": "详细地址",
+                "longitude": 120.1234,
+                "latitude": 30.1234,
+                "price": "人均50元",
+                "business_hours": "10:00-22:00",
+                "tags": ["标签1", "标签2"]
+            }}
+        ]
+    }}
+]
+""".strip()
+
+
+def build_single_plan_prompt(
+    request,
+    candidates,
+    style,
+    guide_text: str = "",
+):
     """构建单个方案风格的专用 prompt。
 
     Args:

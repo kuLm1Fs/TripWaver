@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from tripweaver.core.db import get_db
 from tripweaver.core.security import create_access_token, create_refresh_token, verify_token
 from tripweaver.domain.schemas.auth import LoginRequest, LoginResponse, SendCodeRequest
+from tripweaver.models.user import User
 
 router = APIRouter(prefix="/auth", tags=["认证"])
 

@@ -5,7 +5,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from tripweaver.core.config import get_settings
 from tripweaver.core.db import get_db
 from tripweaver.core.deps import get_current_user_id
-from tripweaver.domain.schemas import ItineraryRequest, ItineraryResponse
+from tripweaver.domain.schemas import (
+    ItineraryRequest,
+    ItineraryResponse,
+    UpdateItineraryRequest,
+    UpdateDayPlacesRequest,
+    RegenerateDayRequest,
+)
 from tripweaver.models.itinerary import Itinerary
 from tripweaver.providers.factory import (
     build_llm_provider,
@@ -263,3 +269,146 @@ async def get_itinerary_route(
         "total_distance": total_distance,
         "total_duration": total_duration,
     }
+
+
+@router.patch("/{itinerary_id}", summary="更新行程概览")
+async def update_itinerary(
+    itinerary_id: int,
+    request: UpdateItineraryRequest,
+    user_id: int = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db),
+):
+    """更新行程概览/标题，仅创建者可操作"""
+    itinerary = await db.get(Itinerary, itinerary_id)
+    if not itinerary:
+        raise HTTPException(status_code=404, detail="行程不存在")
+    if itinerary.creator_id != user_id:
+        raise HTTPException(status_code=403, detail="只有创建者可修改")
+
+    plan_results = itinerary.plan_results or {}
+    if request.overview is not None:
+        plan_results["overview"] = request.overview
+    itinerary.plan_results = plan_results
+    await db.commit()
+    return {"success": True}
+
+
+@router.put("/{itinerary_id}/days/{day}/places", summary="更新某天地点")
+async def update_day_places(
+    itinerary_id: int,
+    day: int,
+    request: UpdateDayPlacesRequest,
+    user_id: int = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db),
+):
+    """更新某一天的地点列表，仅创建者可操作"""
+    itinerary = await db.get(Itinerary, itinerary_id)
+    if not itinerary:
+        raise HTTPException(status_code=404, detail="行程不存在")
+    if itinerary.creator_id != user_id:
+        raise HTTPException(status_code=403, detail="只有创建者可修改")
+    if day < 1 or day > itinerary.days:
+        raise HTTPException(status_code=400, detail="天数超出范围")
+
+    plan_results = itinerary.plan_results or {}
+    plan_options = plan_results.get("plan_options", [])
+    if request.plan_index < 0 or request.plan_index >= len(plan_options):
+        raise HTTPException(status_code=400, detail="方案索引无效")
+
+    # 更新指定方案
+    plan = plan_options[request.plan_index]
+    items = plan.get("items", [])
+    day_found = False
+    for item in items:
+        if item.get("day") == day:
+            item["title"] = request.title or item.get("title", "")
+            item["summary"] = request.summary or item.get("summary", "")
+            item["places"] = [p.model_dump() for p in request.places]
+            day_found = True
+            break
+    if not day_found:
+        # 如果没找到对应 day，追加
+        items.append({
+            "day": day,
+            "title": request.title or f"第{day}天",
+            "summary": request.summary or "",
+            "places": [p.model_dump() for p in request.places],
+        })
+    plan["items"] = items
+    plan_options[request.plan_index] = plan
+    plan_results["plan_options"] = plan_options
+    itinerary.plan_results = plan_results
+    await db.commit()
+    return {"success": True}
+
+
+@router.post("/{itinerary_id}/regenerate-day", summary="重新生成某天行程")
+async def regenerate_day(
+    itinerary_id: int,
+    request: RegenerateDayRequest,
+    user_id: int = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db),
+):
+    """重新生成某一天的行程，使用与原方案相同的风格"""
+    itinerary = await db.get(Itinerary, itinerary_id)
+    if not itinerary:
+        raise HTTPException(status_code=404, detail="行程不存在")
+    if itinerary.creator_id != user_id:
+        raise HTTPException(status_code=403, detail="只有创建者可操作")
+    if request.day < 1 or request.day > itinerary.days:
+        raise HTTPException(status_code=400, detail="天数超出范围")
+
+    plan_results = itinerary.plan_results or {}
+    plan_options = plan_results.get("plan_options", [])
+    if request.plan_index < 0 or request.plan_index >= len(plan_options):
+        raise HTTPException(status_code=400, detail="方案索引无效")
+
+    # 获取原方案风格
+    original_plan = plan_options[request.plan_index]
+    style_title = original_plan.get("title", "景点打卡")
+    style = next((s for s in [
+        {"key": "relaxed_eating", "title": "休闲逛吃", "instruction": "侧重美食探店、轻松休闲，适合吃货朋友。优先安排餐饮、甜品、饮品、小吃等美食类地点，穿插轻松的休闲活动。节奏要慢，每段停留1-2小时，不要赶路。"},
+        {"key": "landmark_tour", "title": "景点打卡", "instruction": "涵盖当地经典必去景点，适合第一次来玩的游客。优先安排地标性景点、历史文化场所、网红打卡地。路线要合理，减少重复步行，一天走完核心景点。"},
+        {"key": "hidden_gems", "title": "小众特色", "instruction": "挖掘本地人常去的小众好去处，避开人流。优先安排小众公园、本地小店、非热门但有特色的地方。不要安排热门景区和网红店，追求独特体验。"},
+    ] if s["title"] == style_title), None)
+    if not style:
+        style = {"key": "landmark_tour", "title": "景点打卡", "instruction": "涵盖当地经典必去景点，适合第一次来玩的游客。优先安排地标性景点、历史文化场所、网红打卡地。路线要合理，减少重复步行，一天走完核心景点。"}
+
+    # 重新搜索候选地点
+    settings = get_settings()
+    search_provider = build_search_provider(settings)
+    from tripweaver.domain.schemas import ItineraryRequest as ReqSchema
+    search_req = ReqSchema(
+        destination=itinerary.destination,
+        days=itinerary.days,
+        interests=request.interests or itinerary.interests or [],
+        latitude=itinerary.user_params.get("latitude") if itinerary.user_params else None,
+        longitude=itinerary.user_params.get("longitude") if itinerary.user_params else None,
+        range_mode=itinerary.user_params.get("range_mode", "walking") if itinerary.user_params else "walking",
+        range_minutes=itinerary.user_params.get("range_minutes", 20) if itinerary.user_params else 20,
+    )
+    candidates = await search_provider.search_places(search_req)
+
+    # 调用 LLM 生成单日行程
+    llm_provider = build_llm_provider(settings)
+    from tripweaver.providers.llm_prompt import build_single_day_prompt
+    prompt = build_single_day_prompt(search_req, candidates, style, request.day)
+    text = await llm_provider._call_llm(prompt, label=f"regenerate_day_{request.day}")
+    import json
+    data = json.loads(text)
+    new_items = data if isinstance(data, list) else [data]
+
+    # 更新 plan_results
+    plan = plan_options[request.plan_index]
+    items = plan.get("items", [])
+    # 替换或追加
+    items = [item for item in items if item.get("day") != request.day]
+    items.extend(new_items)
+    items.sort(key=lambda x: x.get("day", 0))
+    plan["items"] = items
+    plan_options
+    plan_options[request.plan_index] = plan
+    plan_results["plan_options"] = plan_options
+    itinerary.plan_results = plan_results
+    await db.commit()
+    return {"success": True, "day": request.day, "items": new_items}

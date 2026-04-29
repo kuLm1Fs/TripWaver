@@ -3,6 +3,9 @@ from .base import (
     ItineraryResponse,
     ItineraryItem,
     CandidatePlace,
+    UpdateItineraryRequest,
+    UpdateDayPlacesRequest,
+    RegenerateDayRequest,
 )
 from .auth import LoginRequest, LoginResponse, SendCodeRequest
 from .share import CreateShareRequest, CreateShareResponse, ItineraryDetailResponse
