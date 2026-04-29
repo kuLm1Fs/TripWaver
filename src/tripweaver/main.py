@@ -6,6 +6,7 @@ from tripweaver.api.routes.auth import router as auth_router
 from tripweaver.api.routes.itineraries import router as itineraries_router
 from tripweaver.api.routes.itinerary_ext import router as itinerary_ext_router
 from tripweaver.api.routes.cache_admin import router as cache_admin_router
+from tripweaver.core.body_limit import BodySizeLimitMiddleware
 from tripweaver.core.config import get_settings
 from tripweaver.core.errors import register_error_handlers
 from tripweaver.core.logging import LoggingMiddleware, setup_logging
@@ -15,6 +16,7 @@ setup_logging()
 settings = get_settings()
 app = FastAPI(title="TripWeaver")
 
+app.add_middleware(BodySizeLimitMiddleware)
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 app.add_middleware(LoggingMiddleware)
 app.add_middleware(
