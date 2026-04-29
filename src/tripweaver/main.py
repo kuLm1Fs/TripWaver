@@ -10,6 +10,7 @@ from tripweaver.core.body_limit import BodySizeLimitMiddleware
 from tripweaver.core.config import get_settings
 from tripweaver.core.errors import register_error_handlers
 from tripweaver.core.logging import LoggingMiddleware, setup_logging
+from tripweaver.core.security_headers import SecurityHeadersMiddleware
 
 setup_logging()
 
@@ -19,6 +20,7 @@ app = FastAPI(title="TripWeaver")
 app.add_middleware(BodySizeLimitMiddleware)
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 app.add_middleware(LoggingMiddleware)
+app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
