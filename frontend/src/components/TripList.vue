@@ -60,6 +60,7 @@ import { Delete } from '@element-plus/icons-vue'
 import { apiClient, deleteItinerary } from '@/api/itinerary'
 import type { ItinerarySummary } from '@/types/itinerary'
 import ConfirmDialog from './ConfirmDialog.vue'
+import { formatDate } from '@/utils/format'
 
 const router = useRouter()
 const trips = ref<ItinerarySummary[]>([])
@@ -103,10 +104,6 @@ const confirmDelete = async () => {
     deleteLoading.value = false
     deleteTarget.value = null
   }
-}
-
-const formatDate = (dateStr: string) => {
-  return new Date(dateStr).toLocaleDateString('zh-CN')
 }
 
 onMounted(fetchTrips)

@@ -26,17 +26,7 @@
     <el-card v-if="selectedPlan" class="plan-detail-card">
       <template #header><h3>{{ selectedPlan.title || '行程方案' }}</h3></template>
       <div class="day-cards">
-        <el-card v-for="item in selectedPlan.items" :key="item.day" class="day-card">
-          <template #header><h4>{{ item.title }}</h4></template>
-          <p>{{ item.summary }}</p>
-          <div class="places-list">
-            <div v-for="place in item.places" :key="place.name" class="place-item">
-              <span class="place-name">{{ place.name }}</span>
-              <el-tag size="small">{{ place.category }}</el-tag>
-              <p class="place-reason">{{ place.reason }}</p>
-            </div>
-          </div>
-        </el-card>
+        <DayCard v-for="item in selectedPlan.items" :key="item.day" :item="item" />
       </div>
     </el-card>
 
@@ -67,6 +57,7 @@ import { useRouter } from 'vue-router'
 import { getSharedItinerary } from '@/api/share'
 import VotePanel from '@/components/VotePanel.vue'
 import MemberList from '@/components/MemberList.vue'
+import DayCard from '@/components/DayCard.vue'
 import type { ItineraryDetailResponse, VoteStat } from '@/types/share'
 import type { PlanOption } from '@/types/itinerary'
 
@@ -136,34 +127,6 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   gap: 16px;
-}
-
-.day-card {
-  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.08);
-}
-
-.places-list {
-  margin-top: 12px;
-}
-
-.place-item {
-  padding: 10px 0;
-  border-bottom: 1px solid #f0f0f0;
-}
-
-.place-item:last-child {
-  border-bottom: none;
-}
-
-.place-name {
-  font-weight: 600;
-  margin-right: 8px;
-}
-
-.place-reason {
-  color: #909399;
-  font-size: 13px;
-  margin: 4px 0 0;
 }
 
 .error-wrapper,

@@ -68,17 +68,7 @@
     <el-card class="plan-card" v-if="planOptions.length === 0">
       <template #header><h3>行程方案</h3></template>
       <div class="day-cards">
-        <el-card v-for="item in trip.items" :key="item.day" class="day-card">
-          <template #header><h3>{{ item.title }}</h3></template>
-          <p>{{ item.summary }}</p>
-          <div class="places-list">
-            <div v-for="place in item.places" :key="place.name" class="place-item">
-              <span class="place-name">{{ place.name }}</span>
-              <el-tag size="small">{{ place.category }}</el-tag>
-              <p class="place-reason">{{ place.reason }}</p>
-            </div>
-          </div>
-        </el-card>
+        <DayCard v-for="item in trip.items" :key="item.day" :item="item" />
       </div>
     </el-card>
 
@@ -172,10 +162,12 @@ import { WarningFilled } from '@element-plus/icons-vue'
 import { useTripStore } from '@/stores/trip'
 import { apiClient } from '@/api/itinerary'
 import { lockItinerary } from '@/api/lock'
+import { getVoteCount, getTotalVotes, getVotePercentage, getWinnerIndex } from '@/utils/vote'
 import VotePanel from '@/components/VotePanel.vue'
 import ShareDialog from '@/components/ShareDialog.vue'
 import MemberList from '@/components/MemberList.vue'
 import MapView from '@/components/MapView.vue'
+import DayCard from '@/components/DayCard.vue'
 import type { ItineraryResponse, PlanOption } from '@/types/itinerary'
 import type { Member, VoteStat } from '@/types/share'
 
@@ -311,39 +303,17 @@ const handleLock = () => {
 }
 
 // 锁定弹窗内的投票统计
-const getLockVoteCount = (index: number): number => {
-  const stat = voteStats.value.find((s) => s.plan_index === index)
-  return stat?.count || 0
-}
-
-const getTotalLockVotes = (): number => {
-  return voteStats.value.reduce((sum, s) => sum + s.count, 0)
-}
-
-const getLockVotePercentage = (index: number): number => {
-  const total = getTotalLockVotes()
-  if (total === 0) return 0
-  return Math.round((getLockVoteCount(index) / total) * 100)
-}
-
-const getLockWinnerIndex = (): number => {
-  let maxVotes = 0
-  let winner = 0
-  voteStats.value.forEach((s) => {
-    if (s.count > maxVotes) {
-      maxVotes = s.count
-      winner = s.plan_index
-    }
-  })
-  return winner
-}
+const getLockVoteCount = (index: number) => getVoteCount(voteStats.value, index)
+const getTotalLockVotes = () => getTotalVotes(voteStats.value)
+const getLockVotePercentage = (index: number) => getVotePercentage(voteStats.value, index)
+const getLockWinnerIndex = () => getWinnerIndex(voteStats.value)
 
 const confirmLock = async () => {
   if (!trip.value?.itinerary_id) return
   lockLoading.value = true
   try {
-    const winnerIndex = getTotalLockVotes() > 0 ? getLockWinnerIndex() : 0
-    const res = await lockItinerary(trip.value.itinerary_id, 'lock', winnerIndex)
+    const winner = getTotalLockVotes() > 0 ? getLockWinnerIndex() : 0
+    const res = await lockItinerary(trip.value.itinerary_id, 'lock', winner)
     tripLocked.value = res.is_locked
     showLockDialog.value = false
     ElMessage.success('行程已锁定')
@@ -423,40 +393,6 @@ onMounted(async () => {
 
 .map-card h3 {
   margin: 0;
-}
-
-.day-cards {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.day-card {
-  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.08);
-}
-
-.places-list {
-  margin-top: 12px;
-}
-
-.place-item {
-  padding: 10px 0;
-  border-bottom: 1px solid #f0f0f0;
-}
-
-.place-item:last-child {
-  border-bottom: none;
-}
-
-.place-name {
-  font-weight: 600;
-  margin-right: 8px;
-}
-
-.place-reason {
-  color: #909399;
-  font-size: 13px;
-  margin: 4px 0 0;
 }
 
 .loading-wrapper {

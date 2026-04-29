@@ -15,13 +15,13 @@
         class="plan-option"
         :class="{
           'is-voted': currentUserVote === index,
-          'is-winner': isLocked && getWinnerIndex() === index,
+          'is-winner': isLocked && winnerIndex === index,
         }"
       >
         <div class="option-header">
           <h4>{{ option.title || `方案${index + 1}` }}</h4>
           <div class="vote-count">
-            <span class="count">{{ getVoteCount(index) }}</span>
+            <span class="count">{{ getCount(index) }}</span>
             <span class="label">票</span>
           </div>
         </div>
@@ -40,7 +40,7 @@
 
         <!-- 投票进度条 -->
         <el-progress
-          :percentage="getVotePercentage(index)"
+          :percentage="getPercent(index)"
           :color="currentUserVote === index ? '#409eff' : '#e4e7ed'"
           :stroke-width="8"
           style="margin: 10px 0"
@@ -77,9 +77,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import { votePlan } from '@/api/vote'
+import { getVoteCount, getVotePercentage, getWinnerIndex } from '@/utils/vote'
 import type { PlanOption } from '@/types/itinerary'
 import type { VoteStat } from '@/types/share'
 
@@ -99,32 +100,10 @@ const emit = defineEmits<{
 const voting = ref(false)
 const viewingPlan = ref<number | null>(null)
 
-const getVoteCount = (index: number): number => {
-  const stat = props.voteStats.find((s) => s.plan_index === index)
-  return stat?.count || 0
-}
+const winnerIndex = computed(() => getWinnerIndex(props.voteStats))
 
-const getTotalVotes = (): number => {
-  return props.voteStats.reduce((sum, s) => sum + s.count, 0)
-}
-
-const getVotePercentage = (index: number): number => {
-  const total = getTotalVotes()
-  if (total === 0) return 0
-  return Math.round((getVoteCount(index) / total) * 100)
-}
-
-const getWinnerIndex = (): number => {
-  let maxVotes = 0
-  let winner = 0
-  props.voteStats.forEach((s) => {
-    if (s.count > maxVotes) {
-      maxVotes = s.count
-      winner = s.plan_index
-    }
-  })
-  return winner
-}
+const getCount = (index: number) => getVoteCount(props.voteStats, index)
+const getPercent = (index: number) => getVotePercentage(props.voteStats, index)
 
 const handleViewPlan = (planIndex: number) => {
   viewingPlan.value = planIndex

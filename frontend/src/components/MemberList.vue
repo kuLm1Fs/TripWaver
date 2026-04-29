@@ -17,14 +17,11 @@
 
 <script setup lang="ts">
 import type { Member } from '@/types/share'
+import { formatDate } from '@/utils/format'
 
 defineProps<{
   members: Member[]
 }>()
-
-const formatDate = (dateStr: string) => {
-  return new Date(dateStr).toLocaleDateString('zh-CN')
-}
 </script>
 
 <style scoped>
