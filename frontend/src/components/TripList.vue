@@ -33,24 +33,40 @@
           size="small"
           circle
           plain
-          @click.stop="handleDelete(trip)"
+          @click.stop="openDeleteConfirm(trip)"
         />
       </el-card>
     </div>
+
+    <!-- 删除确认弹窗 -->
+    <ConfirmDialog
+      v-model="showDeleteDialog"
+      title="删除行程"
+      :message="deleteTarget ? `确定删除「${deleteTarget.destination}」行程？删除后不可恢复。` : ''"
+      confirm-text="删除"
+      cancel-text="取消"
+      type="danger"
+      :loading="deleteLoading"
+      @confirm="confirmDelete"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
 import { Delete } from '@element-plus/icons-vue'
 import { apiClient, deleteItinerary } from '@/api/itinerary'
 import type { ItinerarySummary } from '@/types/itinerary'
+import ConfirmDialog from './ConfirmDialog.vue'
 
 const router = useRouter()
 const trips = ref<ItinerarySummary[]>([])
 const loading = ref(true)
+const showDeleteDialog = ref(false)
+const deleteTarget = ref<ItinerarySummary | null>(null)
+const deleteLoading = ref(false)
 
 const fetchTrips = async () => {
   loading.value = true
@@ -58,7 +74,6 @@ const fetchTrips = async () => {
     const response = await apiClient.get('/itineraries')
     trips.value = response.data
   } catch {
-    // 接口可能不存在，静默失败
     trips.value = []
   } finally {
     loading.value = false
@@ -69,18 +84,24 @@ const goToDetail = (id: number) => {
   router.push(`/trip/${id}`)
 }
 
-const handleDelete = async (trip: ItinerarySummary) => {
+const openDeleteConfirm = (trip: ItinerarySummary) => {
+  deleteTarget.value = trip
+  showDeleteDialog.value = true
+}
+
+const confirmDelete = async () => {
+  if (!deleteTarget.value) return
+  deleteLoading.value = true
   try {
-    await ElMessageBox.confirm(
-      `确定删除「${trip.destination}」行程？删除后不可恢复。`,
-      '删除行程',
-      { confirmButtonText: '删除', cancelButtonText: '取消', type: 'warning' },
-    )
-    await deleteItinerary(trip.id)
-    trips.value = trips.value.filter((t) => t.id !== trip.id)
+    await deleteItinerary(deleteTarget.value.id)
+    trips.value = trips.value.filter((t) => t.id !== deleteTarget.value!.id)
     ElMessage.success('行程已删除')
+    showDeleteDialog.value = false
   } catch {
-    // 用户取消或删除失败
+    ElMessage.error('删除失败')
+  } finally {
+    deleteLoading.value = false
+    deleteTarget.value = null
   }
 }
 
