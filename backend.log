@@ -1,0 +1,93 @@
+INFO:     Started server process [66238]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+{"event": "request_started", "request_id": "a6d9c0cf-e030-41fc-ba0c-4458d9c46f91", "method": "POST", "path": "/api/v1/auth/login", "level": "info", "timestamp": "2026-04-28T18:12:14.073365Z"}
+2026-04-29 02:12:14,156 INFO sqlalchemy.engine.Engine select pg_catalog.version()
+2026-04-29 02:12:14,156 INFO sqlalchemy.engine.Engine [raw sql] ()
+2026-04-29 02:12:14,182 INFO sqlalchemy.engine.Engine select current_schema()
+2026-04-29 02:12:14,182 INFO sqlalchemy.engine.Engine [raw sql] ()
+2026-04-29 02:12:14,217 INFO sqlalchemy.engine.Engine show standard_conforming_strings
+2026-04-29 02:12:14,217 INFO sqlalchemy.engine.Engine [raw sql] ()
+2026-04-29 02:12:14,243 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-04-29 02:12:14,252 INFO sqlalchemy.engine.Engine SELECT users.id, users.phone, users.nickname, users.avatar, users.created_at, users.updated_at, users.last_login_at 
+FROM users 
+WHERE users.phone = $1::VARCHAR
+2026-04-29 02:12:14,252 INFO sqlalchemy.engine.Engine [generated in 0.00015s] ('13800138000',)
+2026-04-29 02:12:14,281 INFO sqlalchemy.engine.Engine UPDATE users SET updated_at=now(), last_login_at=$1::TIMESTAMP WITHOUT TIME ZONE WHERE users.id = $2::INTEGER
+2026-04-29 02:12:14,281 INFO sqlalchemy.engine.Engine [generated in 0.00012s] (datetime.datetime(2026, 4, 28, 18, 12, 14, 279600), 3)
+2026-04-29 02:12:14,300 INFO sqlalchemy.engine.Engine COMMIT
+/Users/poikoi/code/TripWeaver/.venv/lib/python3.12/site-packages/jwt/api_jwt.py:147: InsecureKeyLengthWarning: The HMAC key is 25 bytes long, which is below the minimum recommended length of 32 bytes for SHA256. See RFC 7518 Section 3.2.
+  return self._jws.encode(
+{"status_code": 200, "duration_ms": 238.49, "event": "request_completed", "request_id": "a6d9c0cf-e030-41fc-ba0c-4458d9c46f91", "method": "POST", "path": "/api/v1/auth/login", "level": "info", "timestamp": "2026-04-28T18:12:14.311966Z"}
+INFO:     127.0.0.1:58407 - "POST /api/v1/auth/login HTTP/1.1" 200 OK
+{"event": "request_started", "request_id": "e5ee1f08-4fa6-4017-b992-d98e30a2de0b", "method": "POST", "path": "/api/v1/itineraries/plan", "level": "info", "timestamp": "2026-04-28T18:12:14.328337Z"}
+/Users/poikoi/code/TripWeaver/.venv/lib/python3.12/site-packages/jwt/api_jwt.py:365: InsecureKeyLengthWarning: The HMAC key is 25 bytes long, which is below the minimum recommended length of 32 bytes for SHA256. See RFC 7518 Section 3.2.
+  decoded = self.decode_complete(
+{"destination": "\u6d4b\u8bd5", "range_mode": "walking", "event": "\u5f00\u59cb\u641c\u7d22POI", "llm_cached": false, "cache_hit": false, "request_id": "e5ee1f08-4fa6-4017-b992-d98e30a2de0b", "method": "POST", "path": "/api/v1/itineraries/plan", "level": "info", "timestamp": "2026-04-28T18:12:14.412741Z"}
+{"destination": "\u6d4b\u8bd5", "candidates": 0, "duration_ms": 72.37, "event": "poi_searched", "llm_cached": false, "cache_hit": false, "request_id": "e5ee1f08-4fa6-4017-b992-d98e30a2de0b", "method": "POST", "path": "/api/v1/itineraries/plan", "level": "info", "timestamp": "2026-04-28T18:12:14.485113Z"}
+{"event": "\u5f00\u59cbLLM\u751f\u6210\u884c\u7a0b", "llm_cached": false, "cache_hit": false, "request_id": "e5ee1f08-4fa6-4017-b992-d98e30a2de0b", "method": "POST", "path": "/api/v1/itineraries/plan", "level": "info", "timestamp": "2026-04-28T18:12:14.485179Z"}
+{"event": "\u5f00\u59cb\u5e76\u884c\u751f\u62103\u4e2a\u65b9\u6848", "llm_cached": false, "cache_hit": false, "request_id": "e5ee1f08-4fa6-4017-b992-d98e30a2de0b", "method": "POST", "path": "/api/v1/itineraries/plan", "level": "info", "timestamp": "2026-04-28T18:12:14.485210Z"}
+{"label": "\u5c0f\u4f17\u7279\u8272", "text_length": 1817, "retry_times": 0, "event": "LLM\u751f\u6210\u5b8c\u6210", "llm_cached": false, "cache_hit": false, "request_id": "e5ee1f08-4fa6-4017-b992-d98e30a2de0b", "method": "POST", "path": "/api/v1/itineraries/plan", "level": "info", "timestamp": "2026-04-28T18:12:37.656110Z"}
+{"label": "\u666f\u70b9\u6253\u5361", "text_length": 1795, "retry_times": 0, "event": "LLM\u751f\u6210\u5b8c\u6210", "llm_cached": false, "cache_hit": false, "request_id": "e5ee1f08-4fa6-4017-b992-d98e30a2de0b", "method": "POST", "path": "/api/v1/itineraries/plan", "level": "info", "timestamp": "2026-04-28T18:12:39.590468Z"}
+{"label": "\u4f11\u95f2\u901b\u5403", "text_length": 2228, "retry_times": 0, "event": "LLM\u751f\u6210\u5b8c\u6210", "llm_cached": false, "cache_hit": false, "request_id": "e5ee1f08-4fa6-4017-b992-d98e30a2de0b", "method": "POST", "path": "/api/v1/itineraries/plan", "level": "info", "timestamp": "2026-04-28T18:12:40.496048Z"}
+{"success": 3, "total": 3, "event": "\u5e76\u884c\u751f\u6210\u5b8c\u6210", "llm_cached": false, "cache_hit": false, "request_id": "e5ee1f08-4fa6-4017-b992-d98e30a2de0b", "method": "POST", "path": "/api/v1/itineraries/plan", "level": "info", "timestamp": "2026-04-28T18:12:40.496326Z"}
+{"plans": 3, "days": 1, "duration_ms": 26011.35, "event": "llm_generated", "llm_cached": false, "cache_hit": false, "request_id": "e5ee1f08-4fa6-4017-b992-d98e30a2de0b", "method": "POST", "path": "/api/v1/itineraries/plan", "level": "info", "timestamp": "2026-04-28T18:12:40.496501Z"}
+{"places_count": 11, "event": "\u5f00\u59cb\u5750\u6807\u56de\u586b", "llm_cached": false, "cache_hit": false, "request_id": "e5ee1f08-4fa6-4017-b992-d98e30a2de0b", "method": "POST", "path": "/api/v1/itineraries/plan", "level": "info", "timestamp": "2026-04-28T18:12:40.496577Z"}
+{"matched": 0, "need_geocode": 7, "event": "\u540d\u79f0\u5339\u914d\u5b8c\u6210", "llm_cached": false, "cache_hit": false, "request_id": "e5ee1f08-4fa6-4017-b992-d98e30a2de0b", "method": "POST", "path": "/api/v1/itineraries/plan", "level": "info", "timestamp": "2026-04-28T18:12:40.496625Z"}
+{"geocoded": 6, "event": "\u5730\u7406\u7f16\u7801\u5b8c\u6210", "llm_cached": false, "cache_hit": false, "request_id": "e5ee1f08-4fa6-4017-b992-d98e30a2de0b", "method": "POST", "path": "/api/v1/itineraries/plan", "level": "info", "timestamp": "2026-04-28T18:12:40.752584Z"}
+2026-04-29 02:12:40,763 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-04-29 02:12:40,767 INFO sqlalchemy.engine.Engine INSERT INTO itineraries (creator_id, destination, days, interests, user_params, plan_results, final_plan_index, is_locked, locked_at) VALUES ($1::INTEGER, $2::VARCHAR, $3::INTEGER, $4::JSON, $5::JSON, $6::JSON, $7::INTEGER, $8::BOOLEAN, $9::TIMESTAMP WITHOUT TIME ZONE) RETURNING itineraries.id, itineraries.created_at, itineraries.updated_at
+2026-04-29 02:12:40,767 INFO sqlalchemy.engine.Engine [generated in 0.00019s] (3, '测试', 1, '[]', '{}', '{"itinerary_id": null, "destination": "\\u6d4b\\u8bd5", "overview": "\\u8fd9\\u662f\\u4e00\\u5929\\u8282\\u594f\\u8212\\u7f13\\u7684\\u901b\\u5403\\u ... (14732 characters truncated) ... urs": "\\u5168\\u5929\\u5f00\\u653e", "tags": ["\\u5c0f\\u4f17\\u89c2\\u5149", "\\u6563\\u6b65\\u4f11\\u95f2", "\\u4eba\\u6587\\u666f\\u89c2"]}]}]}]}', None, False, None)
+2026-04-29 02:12:40,795 INFO sqlalchemy.engine.Engine COMMIT
+2026-04-29 02:12:40,804 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-04-29 02:12:40,804 INFO sqlalchemy.engine.Engine SELECT itineraries.id, itineraries.creator_id, itineraries.destination, itineraries.days, itineraries.interests, itineraries.user_params, itineraries.plan_results, itineraries.final_plan_index, itineraries.is_locked, itineraries.locked_at, itineraries.created_at, itineraries.updated_at 
+FROM itineraries 
+WHERE itineraries.id = $1::INTEGER
+2026-04-29 02:12:40,805 INFO sqlalchemy.engine.Engine [generated in 0.00008s] (21,)
+{"status_code": 200, "duration_ms": 26506.29, "event": "request_completed", "request_id": "e5ee1f08-4fa6-4017-b992-d98e30a2de0b", "method": "POST", "path": "/api/v1/itineraries/plan", "level": "info", "timestamp": "2026-04-28T18:12:40.834692Z"}
+INFO:     127.0.0.1:58411 - "POST /api/v1/itineraries/plan HTTP/1.1" 200 OK
+2026-04-29 02:12:40,835 INFO sqlalchemy.engine.Engine ROLLBACK
+{"event": "request_started", "request_id": "6335fc83-efa9-43cd-bf35-07f59476d48f", "method": "POST", "path": "/api/v1/itineraries/plan", "level": "info", "timestamp": "2026-04-28T18:12:40.848862Z"}
+{"key": "llm_cache:afe002a834223489", "event": "llm_cache_hit", "request_id": "6335fc83-efa9-43cd-bf35-07f59476d48f", "method": "POST", "path": "/api/v1/itineraries/plan", "level": "info", "timestamp": "2026-04-28T18:12:40.881755Z"}
+2026-04-29 02:12:40,890 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-04-29 02:12:40,890 INFO sqlalchemy.engine.Engine INSERT INTO itineraries (creator_id, destination, days, interests, user_params, plan_results, final_plan_index, is_locked, locked_at) VALUES ($1::INTEGER, $2::VARCHAR, $3::INTEGER, $4::JSON, $5::JSON, $6::JSON, $7::INTEGER, $8::BOOLEAN, $9::TIMESTAMP WITHOUT TIME ZONE) RETURNING itineraries.id, itineraries.created_at, itineraries.updated_at
+2026-04-29 02:12:40,890 INFO sqlalchemy.engine.Engine [cached since 0.1231s ago] (3, '测试', 1, '[]', '{}', '{"itinerary_id": null, "destination": "\\u6d4b\\u8bd5", "overview": "\\u8fd9\\u662f\\u4e00\\u5929\\u8282\\u594f\\u8212\\u7f13\\u7684\\u901b\\u5403\\u ... (14732 characters truncated) ... urs": "\\u5168\\u5929\\u5f00\\u653e", "tags": ["\\u5c0f\\u4f17\\u89c2\\u5149", "\\u6563\\u6b65\\u4f11\\u95f2", "\\u4eba\\u6587\\u666f\\u89c2"]}]}]}]}', None, False, None)
+2026-04-29 02:12:40,909 INFO sqlalchemy.engine.Engine COMMIT
+2026-04-29 02:12:40,920 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-04-29 02:12:40,921 INFO sqlalchemy.engine.Engine SELECT itineraries.id, itineraries.creator_id, itineraries.destination, itineraries.days, itineraries.interests, itineraries.user_params, itineraries.plan_results, itineraries.final_plan_index, itineraries.is_locked, itineraries.locked_at, itineraries.created_at, itineraries.updated_at 
+FROM itineraries 
+WHERE itineraries.id = $1::INTEGER
+2026-04-29 02:12:40,921 INFO sqlalchemy.engine.Engine [cached since 0.1161s ago] (22,)
+{"status_code": 200, "duration_ms": 89.81, "event": "request_completed", "request_id": "6335fc83-efa9-43cd-bf35-07f59476d48f", "method": "POST", "path": "/api/v1/itineraries/plan", "level": "info", "timestamp": "2026-04-28T18:12:40.938760Z"}
+INFO:     127.0.0.1:58479 - "POST /api/v1/itineraries/plan HTTP/1.1" 200 OK
+2026-04-29 02:12:40,939 INFO sqlalchemy.engine.Engine ROLLBACK
+{"event": "request_started", "request_id": "c35b0578-ab3f-4059-8464-7bb26dec61a9", "method": "POST", "path": "/api/v1/itineraries/plan", "level": "info", "timestamp": "2026-04-28T18:12:40.949259Z"}
+{"key": "llm_cache:afe002a834223489", "event": "llm_cache_hit", "request_id": "c35b0578-ab3f-4059-8464-7bb26dec61a9", "method": "POST", "path": "/api/v1/itineraries/plan", "level": "info", "timestamp": "2026-04-28T18:12:40.982483Z"}
+2026-04-29 02:12:40,991 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-04-29 02:12:40,991 INFO sqlalchemy.engine.Engine INSERT INTO itineraries (creator_id, destination, days, interests, user_params, plan_results, final_plan_index, is_locked, locked_at) VALUES ($1::INTEGER, $2::VARCHAR, $3::INTEGER, $4::JSON, $5::JSON, $6::JSON, $7::INTEGER, $8::BOOLEAN, $9::TIMESTAMP WITHOUT TIME ZONE) RETURNING itineraries.id, itineraries.created_at, itineraries.updated_at
+2026-04-29 02:12:40,991 INFO sqlalchemy.engine.Engine [cached since 0.2239s ago] (3, '测试', 1, '[]', '{}', '{"itinerary_id": null, "destination": "\\u6d4b\\u8bd5", "overview": "\\u8fd9\\u662f\\u4e00\\u5929\\u8282\\u594f\\u8212\\u7f13\\u7684\\u901b\\u5403\\u ... (14732 characters truncated) ... urs": "\\u5168\\u5929\\u5f00\\u653e", "tags": ["\\u5c0f\\u4f17\\u89c2\\u5149", "\\u6563\\u6b65\\u4f11\\u95f2", "\\u4eba\\u6587\\u666f\\u89c2"]}]}]}]}', None, False, None)
+2026-04-29 02:12:41,009 INFO sqlalchemy.engine.Engine COMMIT
+2026-04-29 02:12:41,020 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-04-29 02:12:41,020 INFO sqlalchemy.engine.Engine SELECT itineraries.id, itineraries.creator_id, itineraries.destination, itineraries.days, itineraries.interests, itineraries.user_params, itineraries.plan_results, itineraries.final_plan_index, itineraries.is_locked, itineraries.locked_at, itineraries.created_at, itineraries.updated_at 
+FROM itineraries 
+WHERE itineraries.id = $1::INTEGER
+2026-04-29 02:12:41,020 INFO sqlalchemy.engine.Engine [cached since 0.2159s ago] (23,)
+{"status_code": 200, "duration_ms": 90.49, "event": "request_completed", "request_id": "c35b0578-ab3f-4059-8464-7bb26dec61a9", "method": "POST", "path": "/api/v1/itineraries/plan", "level": "info", "timestamp": "2026-04-28T18:12:41.039825Z"}
+INFO:     127.0.0.1:58481 - "POST /api/v1/itineraries/plan HTTP/1.1" 200 OK
+2026-04-29 02:12:41,040 INFO sqlalchemy.engine.Engine ROLLBACK
+{"event": "request_started", "request_id": "10dae976-ca07-47aa-8203-b5f1c531ab95", "method": "POST", "path": "/api/v1/itineraries/plan", "level": "info", "timestamp": "2026-04-28T18:12:41.050389Z"}
+{"key": "ratelimit:plan:3", "event": "rate_limit_triggered", "request_id": "10dae976-ca07-47aa-8203-b5f1c531ab95", "method": "POST", "path": "/api/v1/itineraries/plan", "level": "warning", "timestamp": "2026-04-28T18:12:41.059700Z"}
+{"status": 429, "detail": "\u8bf7\u6c42\u8fc7\u4e8e\u9891\u7e41\uff0c\u8bf710\u5206\u949f\u540e\u518d\u8bd5\uff085\u6b21\uff09", "event": "http_error", "request_id": "10dae976-ca07-47aa-8203-b5f1c531ab95", "method": "POST", "path": "/api/v1/itineraries/plan", "level": "warning", "timestamp": "2026-04-28T18:12:41.059917Z"}
+{"status_code": 429, "duration_ms": 9.59, "event": "request_completed", "request_id": "10dae976-ca07-47aa-8203-b5f1c531ab95", "method": "POST", "path": "/api/v1/itineraries/plan", "level": "info", "timestamp": "2026-04-28T18:12:41.060025Z"}
+INFO:     127.0.0.1:58483 - "POST /api/v1/itineraries/plan HTTP/1.1" 429 Too Many Requests
+{"event": "request_started", "request_id": "ddaf2c36-96a0-43f9-a195-f3233cfaeec9", "method": "POST", "path": "/api/v1/itineraries/plan", "level": "info", "timestamp": "2026-04-28T18:12:41.069632Z"}
+{"key": "ratelimit:plan:3", "event": "rate_limit_triggered", "request_id": "ddaf2c36-96a0-43f9-a195-f3233cfaeec9", "method": "POST", "path": "/api/v1/itineraries/plan", "level": "warning", "timestamp": "2026-04-28T18:12:41.078863Z"}
+{"status": 429, "detail": "\u8bf7\u6c42\u8fc7\u4e8e\u9891\u7e41\uff0c\u8bf710\u5206\u949f\u540e\u518d\u8bd5\uff086\u6b21\uff09", "event": "http_error", "request_id": "ddaf2c36-96a0-43f9-a195-f3233cfaeec9", "method": "POST", "path": "/api/v1/itineraries/plan", "level": "warning", "timestamp": "2026-04-28T18:12:41.079028Z"}
+{"status_code": 429, "duration_ms": 9.45, "event": "request_completed", "request_id": "ddaf2c36-96a0-43f9-a195-f3233cfaeec9", "method": "POST", "path": "/api/v1/itineraries/plan", "level": "info", "timestamp": "2026-04-28T18:12:41.079113Z"}
+INFO:     127.0.0.1:58485 - "POST /api/v1/itineraries/plan HTTP/1.1" 429 Too Many Requests
+{"event": "request_started", "request_id": "d7c1bae5-94f5-439c-8d89-d4e91e5cbf4e", "method": "POST", "path": "/api/v1/itineraries/plan", "level": "info", "timestamp": "2026-04-28T18:12:41.087811Z"}
+{"key": "ratelimit:plan:3", "event": "rate_limit_triggered", "request_id": "d7c1bae5-94f5-439c-8d89-d4e91e5cbf4e", "method": "POST", "path": "/api/v1/itineraries/plan", "level": "warning", "timestamp": "2026-04-28T18:12:41.097074Z"}
+{"status": 429, "detail": "\u8bf7\u6c42\u8fc7\u4e8e\u9891\u7e41\uff0c\u8bf710\u5206\u949f\u540e\u518d\u8bd5\uff087\u6b21\uff09", "event": "http_error", "request_id": "d7c1bae5-94f5-439c-8d89-d4e91e5cbf4e", "method": "POST", "path": "/api/v1/itineraries/plan", "level": "warning", "timestamp": "2026-04-28T18:12:41.097214Z"}
+{"status_code": 429, "duration_ms": 9.45, "event": "request_completed", "request_id": "d7c1bae5-94f5-439c-8d89-d4e91e5cbf4e", "method": "POST", "path": "/api/v1/itineraries/plan", "level": "info", "timestamp": "2026-04-28T18:12:41.097290Z"}
+INFO:     127.0.0.1:58487 - "POST /api/v1/itineraries/plan HTTP/1.1" 429 Too Many Requests

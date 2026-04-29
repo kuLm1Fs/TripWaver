@@ -19,6 +19,8 @@ class Settings(BaseSettings):
     
     # 数据库配置
     db_url: str = "postgresql+asyncpg://tripweaver:tripweaver@localhost:5432/tripweaver"
+    db_pool_size: int = 10  # 连接池基础大小
+    db_max_overflow: int = 20  # 允许超出的最大连接数
     # Redis配置
     redis_url: str = "redis://localhost:6379/0"
     # JWT配置
