@@ -49,10 +49,11 @@ class AmapSearchProvider(SearchProvider):
         if not settings.amap_server_key:
             raise ValueError("AMAP_SERVER_KEY is required when SEARCH_PROVIDER=amap")
         self.key = settings.amap_server_key
+        self.settings = settings
 
     @override
     async def search_places(self, request: ItineraryRequest) -> list[CandidatePlace]:
-        async with httpx.AsyncClient(timeout=15) as client:
+        async with httpx.AsyncClient(timeout=self.settings.search_timeout) as client:
             # 1. 获取经纬度
             lng, lat, resolved_address = await self._geocode(client, request)
             if lat is None or lng is None:
@@ -90,7 +91,7 @@ class AmapSearchProvider(SearchProvider):
             return []
 
         segments = []
-        async with httpx.AsyncClient(timeout=15) as client:
+        async with httpx.AsyncClient(timeout=self.settings.search_timeout) as client:
             for i in range(len(waypoints) - 1):
                 origin = f"{waypoints[i][0]},{waypoints[i][1]}"
                 destination = f"{waypoints[i+1][0]},{waypoints[i+1][1]}"
@@ -149,7 +150,7 @@ class AmapSearchProvider(SearchProvider):
         self, address: str
     ) -> tuple[float | None, float | None]:
         """根据地址查询经纬度，用于 LLM 生成地点的坐标回填。"""
-        async with httpx.AsyncClient(timeout=10) as client:
+        async with httpx.AsyncClient(timeout=self.settings.geocode_timeout) as client:
             resp = await client.get(
                 f"{AMAP_BASE}/geocode/geo",
                 params={"key": self.key, "address": address, "output": "JSON"},

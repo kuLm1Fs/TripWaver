@@ -72,7 +72,7 @@ class ARKLLMProvider(LLMProvider):
                     model=self.settings.ark_model,
                     messages=[{"role": "user", "content": prompt}],
                     temperature=0.7,
-                    timeout=300,
+                    timeout=self.settings.llm_timeout,
                     max_tokens=4096,
                 )
                 text = response.choices[0].message.content.strip()
