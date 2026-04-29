@@ -59,3 +59,23 @@ class RegenerateDayRequest(BaseModel):
     plan_index: int = Field(default=0, ge=0, description="方案索引")
     day: int = Field(..., ge=1, description="第几天（从1开始）")
     interests: list[str] = Field(default_factory=list, max_length=10, description="当天兴趣偏好")
+
+
+class CandidatesResponse(BaseModel):
+    """候选 POI 列表响应"""
+    destination: str
+    pois: list[CandidatePlace]
+
+
+class CustomPlanRequest(BaseModel):
+    """自定义行程生成请求"""
+    destination: str = Field(..., min_length=1, max_length=100)
+    days: int = Field(default=1, ge=1, le=30)
+    interests: list[str] = Field(default_factory=list, max_length=10)
+    latitude: float | None = None
+    longitude: float | None = None
+    address: str | None = None
+    range_mode: str = Field(default="walking")
+    range_minutes: int = Field(default=20, ge=5, le=120)
+    custom_tags: list[str] = Field(default_factory=list, max_length=20)
+    selected_pois: list[CandidatePlace] = Field(..., min_length=1, description="用户选择的 POI")

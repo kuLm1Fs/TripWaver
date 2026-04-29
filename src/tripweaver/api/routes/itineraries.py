@@ -11,6 +11,7 @@ from tripweaver.domain.schemas import (
     UpdateItineraryRequest,
     UpdateDayPlacesRequest,
     RegenerateDayRequest,
+    CustomPlanRequest,
 )
 from tripweaver.models.itinerary import Itinerary
 from tripweaver.providers.factory import (
@@ -412,3 +413,96 @@ async def regenerate_day(
     itinerary.plan_results = plan_results
     await db.commit()
     return {"success": True, "day": request.day, "items": new_items}
+
+
+@router.get("/candidates", summary="获取候选 POI 列表")
+async def get_candidates(
+    destination: str,
+    days: int = 1,
+    interests: str = "",
+    range_mode: str = "walking",
+    range_minutes: int = 20,
+    custom_tags: str = "",
+    latitude: float | None = None,
+    longitude: float | None = None,
+    address: str | None = None,
+    user_id: int = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db),
+):
+    """获取候选 POI 列表，供用户选择后生成自定义行程"""
+    from tripweaver.domain.schemas import ItineraryRequest as ReqSchema
+
+    request = ReqSchema(
+        destination=destination,
+        days=days,
+        interests=interests.split(",") if interests else [],
+        range_mode=range_mode,
+        range_minutes=range_minutes,
+        custom_tags=custom_tags.split(",") if custom_tags else [],
+        latitude=latitude,
+        longitude=longitude,
+        address=address,
+    )
+
+    settings = get_settings()
+    search_provider = build_search_provider(settings)
+    candidates = await search_provider.search_places(request)
+
+    return {
+        "destination": destination,
+        "pois": [c.model_dump() for c in candidates],
+    }
+
+
+@router.post("/custom", response_model=ItineraryResponse, summary="自定义行程生成")
+async def create_custom_plan(
+    request: CustomPlanRequest,
+    user_id: int = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db),
+):
+    """使用用户选择的 POI 生成自定义行程"""
+    from tripweaver.providers.llm_prompt import PLAN_STYLES, build_custom_plan_prompt
+
+    settings = get_settings()
+    llm_provider = build_llm_provider(settings)
+
+    # 使用第一个方案的默认风格
+    style = PLAN_STYLES[0]
+
+    # 并行生成（目前只有一种风格，直接生成）
+    prompt = build_custom_plan_prompt(request, request.selected_pois, style)
+    text = await llm_provider._call_llm(prompt, label="custom_plan")
+
+    import json
+    data = json.loads(text)
+    plan = data if isinstance(data, dict) else data[0]
+
+    items = llm_provider._parse_items(plan.get("items", []))
+
+    response = ItineraryResponse(
+        destination=plan.get("destination", request.destination),
+        overview=plan.get("overview", ""),
+        items=items,
+        plan_options=[plan],
+    )
+
+    # 存储到数据库
+    itinerary = Itinerary(
+        creator_id=user_id,
+        destination=request.destination,
+        days=request.days,
+        interests=request.interests,
+        user_params={
+            "latitude": request.latitude,
+            "longitude": request.longitude,
+            "range_mode": request.range_mode,
+            "range_minutes": request.range_minutes,
+        },
+        plan_results=response.model_dump(),
+    )
+    db.add(itinerary)
+    await db.commit()
+    await db.refresh(itinerary)
+
+    response.itinerary_id = itinerary.id
+    return response

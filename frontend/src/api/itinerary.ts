@@ -1,5 +1,10 @@
 import axios from 'axios'
-import type { ItineraryRequest, ItineraryResponse } from '@/types/itinerary'
+import type {
+  ItineraryRequest,
+  ItineraryResponse,
+  CandidatesResponse,
+  CustomPlanRequest,
+} from '@/types/itinerary'
 
 const apiClient = axios.create({
   baseURL: '/api/v1',
@@ -39,4 +44,14 @@ export const planItinerary = async (data: ItineraryRequest): Promise<ItineraryRe
 
 export const deleteItinerary = async (id: number): Promise<void> => {
   await apiClient.delete(`/itineraries/${id}`)
+}
+
+export const getCandidates = async (params: ItineraryRequest): Promise<CandidatesResponse> => {
+  const response = await apiClient.get<CandidatesResponse>('/itineraries/candidates', { params })
+  return response.data
+}
+
+export const planCustomItinerary = async (data: CustomPlanRequest): Promise<ItineraryResponse> => {
+  const response = await apiClient.post<ItineraryResponse>('/itineraries/custom', data)
+  return response.data
 }

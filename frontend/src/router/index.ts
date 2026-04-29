@@ -17,6 +17,12 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
+      path: '/select-poi',
+      name: 'select-poi',
+      component: () => import('@/views/SelectPOIPage.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
       path: '/trip/:id',
       name: 'trip-detail',
       component: () => import('@/views/TripDetailPage.vue'),

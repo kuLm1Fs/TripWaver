@@ -286,3 +286,82 @@ def build_single_plan_prompt(
     ]
 }}
 """.strip()
+
+
+def build_custom_plan_prompt(
+    request,
+    selected_pois: list,
+    style: dict,
+    guide_text: str = "",
+) -> str:
+    """构建自定义行程 prompt — 仅使用用户选择的 POI。
+
+    Args:
+        request: 行程请求
+        selected_pois: 用户选择的 POI 列表
+        style: PLAN_STYLES 中的一个风格定义
+        guide_text: 攻略文本
+    """
+    candidate_text = _build_candidate_text(selected_pois)
+    all_interests = list(request.interests) + list(request.custom_tags)
+    interest = ", ".join(all_interests) if all_interests else "常规观光"
+    guide_section = _build_guide_section(guide_text)
+
+    return f"""
+你是一个专业的旅行行程规划助手，擅长为朋友聚会定制旅行方案。
+
+请为 {request.destination} 生成 {request.days} 天的「{style["title"]}」风格旅行行程。
+
+【重要】你只能使用以下用户选择的地点来生成行程，禁止自行添加或替换其他地点：
+{candidate_text}
+
+风格要求：{style["instruction"]}
+
+用户兴趣偏好：
+{interest}
+
+攻略参考：
+{guide_section}
+
+生成规则：
+- 【强制】只使用用户选择的地点，不要自行添加任何其他地点
+- 行程安排宽松合理，适合多人聚会，不要太赶
+- 只返回一个方案的合法JSON对象，不要添加任何其他内容
+- 不要在JSON前后添加解释、标题、注释或Markdown代码块
+- 必须包含：title、description、destination、overview、items
+- items中每一项必须包含：day、title、summary、places
+- places中每一项必须包含：name、category、reason、address、longitude、latitude、price、business_hours、tags
+- title 必须是「{style["title"]}」
+- description: {style["description"]}
+- longitude/latitude: 数字类型，没有的话填null
+- 如果某个字段没有合适内容，返回空字符串/[]/null，不要省略字段
+- day必须是整数，从1开始递增
+
+请严格按照以下JSON结构返回（单个对象，不是数组）：
+{{
+    "title": "{style["title"]}",
+    "description": "{style["description"]}",
+    "destination": "{request.destination}",
+    "overview": "...",
+    "items": [
+        {{
+            "day": 1,
+            "title": "第一天行程标题",
+            "summary": "当天行程简述",
+            "places": [
+                {{
+                    "name": "地点名称",
+                    "category": "分类",
+                    "reason": "推荐理由",
+                    "address": "详细地址",
+                    "longitude": 120.1234,
+                    "latitude": 30.1234,
+                    "price": "人均50元",
+                    "business_hours": "10:00-22:00",
+                    "tags": ["标签1", "标签2"]
+                }}
+            ]
+        }}
+    ]
+}}
+""".strip()

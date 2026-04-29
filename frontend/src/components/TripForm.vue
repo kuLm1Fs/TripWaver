@@ -83,16 +83,27 @@
       </el-form-item>
 
       <el-form-item>
-        <el-button
-          type="primary"
-          size="large"
-          @click="handleSubmit"
-          :loading="props.loading"
-          :disabled="!form.destination"
-          style="width: 100%"
-        >
-          {{ props.loading ? '生成中...' : '生成行程' }}
-        </el-button>
+        <div class="submit-buttons">
+          <el-button
+            type="primary"
+            size="large"
+            @click="handleSubmit"
+            :loading="props.loading"
+            :disabled="!form.destination"
+            style="flex: 1"
+          >
+            {{ props.loading ? '生成中...' : '自动生成行程' }}
+          </el-button>
+          <el-button
+            size="large"
+            @click="handleCustomSelect"
+            :disabled="!form.destination"
+            style="flex: 1"
+          >
+            自定义选择 POI
+          </el-button>
+        </div>
+        <div class="button-hint">自动生成：AI 智能推荐地点 · 自定义：自己选择想去的地方</div>
       </el-form-item>
     </el-form>
   </el-card>
@@ -100,10 +111,13 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Position, Van } from '@element-plus/icons-vue'
 import MapView from '@/components/MapView.vue'
 import type { ItineraryRequest } from '@/types/itinerary'
+
+const router = useRouter()
 
 // 预设标签值集合，用于区分自定义标签
 const PRESET_VALUES = new Set(['food', 'museum', 'history', 'nature', 'shopping', 'family', 'nightlife'])
@@ -169,6 +183,29 @@ const handleSubmit = () => {
   form.value.custom_tags = selectedInterests.value.filter(v => !PRESET_VALUES.has(v))
   emit('submit', form.value)
 }
+
+const handleCustomSelect = () => {
+  if (!form.value.destination) {
+    ElMessage.warning('请先在地图上选择目的地')
+    return
+  }
+  // 分离预设标签和自定义标签
+  form.value.interests = selectedInterests.value.filter(v => PRESET_VALUES.has(v))
+  form.value.custom_tags = selectedInterests.value.filter(v => !PRESET_VALUES.has(v))
+  // 跳转到 POI 选择页面，传递参数
+  const query: Record<string, string> = {
+    destination: form.value.destination,
+    days: String(form.value.days),
+    range_mode: form.value.range_mode,
+    range_minutes: String(form.value.range_minutes),
+  }
+  if (form.value.latitude) query.latitude = String(form.value.latitude)
+  if (form.value.longitude) query.longitude = String(form.value.longitude)
+  if (form.value.address) query.address = form.value.address
+  if (form.value.interests.length) query.interests = form.value.interests.join(',')
+  if (form.value.custom_tags.length) query.custom_tags = form.value.custom_tags.join(',')
+  router.push({ name: 'select-poi', query })
+}
 </script>
 
 <style scoped>
@@ -223,5 +260,18 @@ const handleSubmit = () => {
   font-size: 12px;
   color: #909399;
   margin-top: 4px;
+}
+
+.submit-buttons {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+}
+
+.button-hint {
+  font-size: 12px;
+  color: #c0c4cc;
+  margin-top: 8px;
+  text-align: center;
 }
 </style>

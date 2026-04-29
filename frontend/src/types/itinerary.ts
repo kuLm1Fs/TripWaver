@@ -73,3 +73,21 @@ export interface RouteResponse {
   total_distance: number
   total_duration: number
 }
+
+export interface CandidatesResponse {
+  destination: string
+  pois: CandidatePlace[]
+}
+
+export interface CustomPlanRequest {
+  destination: string
+  days: number
+  interests: string[]
+  latitude?: number
+  longitude?: number
+  address?: string
+  range_mode: 'walking' | 'transit'
+  range_minutes: number
+  custom_tags: string[]
+  selected_pois: CandidatePlace[]
+}
