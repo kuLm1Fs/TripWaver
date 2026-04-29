@@ -111,7 +111,7 @@ class TestAuthSchemas:
         assert req.code == "123456"
 
     def test_login_response(self):
-        resp = LoginResponse(access_token="tok", user_id=1, nickname="test", avatar=None)
+        resp = LoginResponse(access_token="tok", refresh_token="refresh", user_id=1, nickname="test", avatar=None)
         assert resp.token_type == "bearer"
 
 

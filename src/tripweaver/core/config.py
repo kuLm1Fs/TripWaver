@@ -25,7 +25,8 @@ class Settings(BaseSettings):
     redis_url: str = "redis://localhost:6379/0"
     # JWT配置
     jwt_secret: str = "tripweaver-dev-secret-1234567890abcdefghij"
-    jwt_expire_hours: int = 2
+    jwt_expire_hours: int = 2  # access_token 有效期（小时）
+    refresh_token_expire_days: int = 7  # refresh_token 有效期（天）
 
     # 高德地图配置
     amap_server_key: str | None = None

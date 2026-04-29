@@ -1,18 +1,22 @@
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from tripweaver.core.db import get_db
-from tripweaver.core.security import create_access_token
+from tripweaver.core.security import create_access_token, create_refresh_token, verify_token
 from tripweaver.domain.schemas.auth import LoginRequest, LoginResponse, SendCodeRequest
-from tripweaver.models.user import User
 
 router = APIRouter(prefix="/auth", tags=["认证"])
 
 # 固定测试验证码
 TEST_VERIFICATION_CODE = "123456"
+
+
+class RefreshResponse(BaseModel):
+    access_token: str
 
 
 @router.post("/send-code", summary="发送验证码")
@@ -33,11 +37,11 @@ async def login(request: LoginRequest, db: AsyncSession = Depends(get_db)):
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="验证码错误"
         )
-    
+
     # 查询用户是否存在
     result = await db.execute(select(User).where(User.phone == request.phone))
     user = result.scalar_one_or_none()
-    
+
     if not user:
         # 自动创建新用户
         user = User(
@@ -51,13 +55,35 @@ async def login(request: LoginRequest, db: AsyncSession = Depends(get_db)):
         # 更新最后登录时间
         user.last_login_at = datetime.utcnow()
         await db.commit()
-    
-    # 生成JWT token
+
+    # 生成 JWT token
     access_token = create_access_token(user.id)
-    
+    refresh_token = create_refresh_token(user.id)
+
     return LoginResponse(
         access_token=access_token,
+        refresh_token=refresh_token,
         user_id=user.id,
         nickname=user.nickname,
         avatar=user.avatar
     )
+
+
+@router.post("/refresh", response_model=RefreshResponse, summary="刷新 access_token")
+async def refresh(request: dict):
+    """使用 refresh_token 获取新的 access_token"""
+    refresh_token = request.get("refresh_token")
+    if not refresh_token:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="refresh_token 必填"
+        )
+    try:
+        user_id = verify_token(refresh_token, expected_type="refresh")
+    except HTTPException:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="refresh_token 无效或已过期"
+        )
+    new_access_token = create_access_token(user_id)
+    return RefreshResponse(access_token=new_access_token)
